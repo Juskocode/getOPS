@@ -30,7 +30,7 @@ MAX_STATE_BYTES = 1_800_000
 PROFILE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,40}$")
 REQUEST_ID_PATTERN = re.compile(r"^[a-zA-Z0-9._:-]{1,80}$")
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-FLASH_CARD_PATTERN = re.compile(r"^f(?:0[1-9]|[1-9][0-9]|1[01][0-9]|120)$")
+FLASH_CARD_PATTERN = re.compile(r"^f(?:0[1-9]|[1-9][0-9]|1[0-4][0-9]|150)$")
 FLASH_ATTEMPT_ID_PATTERN = re.compile(r"^[a-zA-Z0-9._:-]{1,100}$")
 FLASH_BRANCHES = {"all", "market", "feed", "orders", "sessions", "monitoring", "incident", "capacity", "risk", "interview"}
 FLASH_STATUSES = {"all", "unvalidated", "validated", "needs-review", "strong"}
@@ -736,8 +736,8 @@ def parse_iso_timestamp(value: Any) -> datetime | None:
 
 def validate_flash_state(state: dict[str, Any]) -> None:
     drafts = state.get("flashDrafts", {})
-    if not isinstance(drafts, dict) or len(drafts) > 120:
-        raise ValueError("flashDrafts must be an object containing at most 120 cards")
+    if not isinstance(drafts, dict) or len(drafts) > 150:
+        raise ValueError("flashDrafts must be an object containing at most 150 cards")
     for card_id, draft in drafts.items():
         if not isinstance(card_id, str) or not FLASH_CARD_PATTERN.fullmatch(card_id):
             raise ValueError("flashDrafts contains an unknown card ID")

@@ -439,3 +439,13 @@ test('typed recall progression unlocks evidence-based achievements', () => {
   assert.match(source, /@keyframes ops-flash-evidence-in/);
   assert.match(source, /prefers-reduced-motion: reduce[\s\S]*?\.ops-flash-review/);
 });
+
+test('written recall deck includes 150 unique operations cards', () => {
+  const deck = source.slice(source.indexOf('const flashcards = ['), source.indexOf('const FLASH_HISTORY_LIMIT'));
+  const ids = [...deck.matchAll(/\['(f\d+)'\s*,/g)].map(match => match[1]);
+  assert.equal(ids.length, 150);
+  assert.equal(new Set(ids).size, 150);
+  assert.ok(ids.includes('f126'));
+  assert.ok(ids.includes('f134'));
+  assert.ok(ids.includes('f150'));
+});
