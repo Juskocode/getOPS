@@ -10468,7 +10468,16 @@
       }
 
       function filteredCards() {
-        return state.flashFilter === 'all' ? flashcards : flashcards.filter(c => c.branch === state.flashFilter);
+        const branchCards = state.flashFilter === 'all' ? flashcards : flashcards.filter(card => card.branch === state.flashFilter);
+        if (state.flashStatus === 'all') return branchCards;
+        return branchCards.filter(card => {
+          const attempt = latestFlashAttempt(card.id);
+          if (state.flashStatus === 'unvalidated') return !attempt;
+          if (state.flashStatus === 'validated') return Boolean(attempt);
+          if (state.flashStatus === 'needs-review') return Boolean(attempt && attempt.score < 80);
+          if (state.flashStatus === 'strong') return Boolean(attempt && attempt.score >= 80);
+          return true;
+        });
       }
 
       function currentFlashCard(cards = filteredCards()) {
@@ -10512,21 +10521,25 @@
 
       function renderFlash() {
         const cards = filteredCards();
-        if (!cards.length) state.flashFilter = 'all';
-        const active = filteredCards();
+        const active = cards;
         const current = currentFlashCard(active);
-        if (!current) return '<section class="ops-muted-box">No flashcards are available for this selection.</section>';
+        const controls = `<div class="viz-controls">
+          <label class="form-label">Branch<select class="form-select" id="ops-flash-filter"><option value="all" ${state.flashFilter === 'all' ? 'selected' : ''}>All branches</option>${branches.map(b => `<option value="${b.id}" ${state.flashFilter === b.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></label>
+          <label class="form-label">Evidence<select class="form-select" id="ops-flash-status"><option value="all" ${state.flashStatus === 'all' ? 'selected' : ''}>All evidence</option><option value="unvalidated" ${state.flashStatus === 'unvalidated' ? 'selected' : ''}>Unvalidated</option><option value="validated" ${state.flashStatus === 'validated' ? 'selected' : ''}>Validated</option><option value="needs-review" ${state.flashStatus === 'needs-review' ? 'selected' : ''}>Needs review</option><option value="strong" ${state.flashStatus === 'strong' ? 'selected' : ''}>Strong recall</option></select></label>
+          <button type="button" class="btn" data-action="flash-clear-filters" ${state.flashFilter === 'all' && state.flashStatus === 'all' ? 'disabled' : ''}><i data-lucide="filter-x" aria-hidden="true"></i>Reset</button>
+        </div>`;
+        const validated = new Set(state.flashAttempts.map(attempt => attempt.cardId)).size;
+        const strong = flashcards.filter(card => (latestFlashAttempt(card.id)?.score || 0) >= 80).length;
+        const heading = `<section class="ops-section-head"><div><h2>Recall deck</h2><div class="text-small text-muted">${flashcards.length} operations cards | ${validated} validated | ${strong} strong</div></div><span class="viz-badge">${active.length} IN VIEW</span></section>`;
+        if (!current) return `${heading}${controls}<section class="ops-muted-box"><strong>No cards match this evidence view.</strong><div>Reset the filters or widen the selection to continue recall practice.</div><div class="ops-card-actions"><button type="button" class="btn btn-primary" data-action="flash-clear-filters"><i data-lucide="rotate-ccw" aria-hidden="true"></i>Show all cards</button></div></section>`;
         const { card, index: idx } = current;
         const draft = flashDraftFor(card.id);
         const words = flashWordCount(draft);
         const attempt = selectedFlashAttempt(card.id);
         const cardAttempts = flashAttemptsFor(card.id).slice(-5).reverse();
-        const known = Object.values(state.cardRatings).filter(v => v === 'good').length;
         return `
-          <section class="ops-section-head"><div><h2>Recall deck</h2><div class="text-small text-muted">${flashcards.length} operations cards | retrieval first, guide second</div></div><span class="viz-badge">${known} strong</span></section>
-          <div class="viz-controls">
-            <label class="form-label">Branch<select class="form-select" id="ops-flash-filter"><option value="all" ${state.flashFilter === 'all' ? 'selected' : ''}>All branches</option>${branches.map(b => `<option value="${b.id}" ${state.flashFilter === b.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('')}</select></label>
-          </div>
+          ${heading}
+          ${controls}
           <div class="ops-flash-layout">
             <section class="card ops-flashcard">
               <div class="ops-flash-prompt">
@@ -12966,6 +12979,7 @@
         }
         if (action === 'reset-sequence') { state.sequenceAnswers[state.selectedDrill] = []; render(); return; }
         if (action === 'flash-validate') { validateFlashDraft(); return; }
+        if (action === 'flash-clear-filters') { state.flashFilter = 'all'; state.flashStatus = 'all'; state.flashIndex = 0; state.flashRevealed = false; render(); return; }
         if (action === 'flash-reveal') { state.flashRevealed = true; playSound('reveal'); render(); return; }
         if (action === 'flash-attempt-select') {
           const attempt = state.flashAttempts.find(item => item.id === id);
@@ -13193,6 +13207,14 @@
           state.flashIndex = 0;
           state.flashRevealed = false;
           render();
+        }
+        if (event.target.id === 'ops-flash-status') {
+          state.flashStatus = FLASH_STATUSES.has(event.target.value) ? event.target.value : 'all';
+          state.flashIndex = 0;
+          state.flashRevealed = false;
+          state.selectedFlashAttempt = '';
+          render();
+          return;
         }
         if (event.target.id === 'ops-guide-filter') {
           state.guideFilter = event.target.value;

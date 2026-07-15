@@ -372,3 +372,12 @@ test('flashcard evidence merges safely across revisions and browser tabs', () =>
   assert.match(source, /\.slice\(-FLASH_HISTORY_LIMIT\)/);
   assert.match(source, /merged\.selectedFlashAttempt = merged\.flashAttempts\.some/);
 });
+
+test('flashcard filters expose actionable evidence states without dead ends', () => {
+  assert.match(source, /id="ops-flash-status"/);
+  assert.match(source, /state\.flashStatus === 'unvalidated'/);
+  assert.match(source, /state\.flashStatus === 'needs-review'/);
+  assert.match(source, /state\.flashStatus === 'strong'/);
+  assert.match(source, /data-action="flash-clear-filters"/);
+  assert.match(source, /No cards match this evidence view/);
+});
