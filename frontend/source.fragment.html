@@ -1567,9 +1567,31 @@
       min-width: 0;
     }
 
+    #ops-ascent-v1 .ops-flash-evidence-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    #ops-ascent-v1 .ops-flash-evidence-kpis > div {
+      display: grid;
+      gap: 3px;
+      padding: 12px;
+      border: 1px solid var(--border);
+    }
+
+    #ops-ascent-v1 .ops-flash-evidence-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, .7fr);
+      gap: 18px;
+      align-items: start;
+    }
+
     @media (max-width: 760px) {
       #ops-ascent-v1 .ops-flash-score-grid,
-      #ops-ascent-v1 .ops-flash-concepts {
+      #ops-ascent-v1 .ops-flash-concepts,
+      #ops-ascent-v1 .ops-flash-evidence-kpis,
+      #ops-ascent-v1 .ops-flash-evidence-layout {
         grid-template-columns: 1fr;
       }
 
@@ -8740,6 +8762,27 @@
         return scenarios.filter(scenario => scenarioCompositeScore(scenario.id) >= 75).length;
       }
 
+      function flashEvidenceSummary() {
+        const latestByCard = new Map();
+        state.flashAttempts.forEach(attempt => latestByCard.set(attempt.cardId, attempt));
+        const latest = [...latestByCard.values()];
+        const strong = latest.filter(attempt => attempt.score >= 80).length;
+        const needsReview = latest.filter(attempt => attempt.score < 80).length;
+        const average = latest.length ? Math.round(latest.reduce((sum, attempt) => sum + attempt.score, 0) / latest.length) : 0;
+        const branchRows = branches.map(branch => {
+          const cards = flashcards.filter(card => card.branch === branch.id);
+          const attempts = cards.map(card => latestByCard.get(card.id)).filter(Boolean);
+          return {
+            ...branch,
+            total: cards.length,
+            validated: attempts.length,
+            strong: attempts.filter(attempt => attempt.score >= 80).length,
+            average: attempts.length ? Math.round(attempts.reduce((sum, attempt) => sum + attempt.score, 0) / attempts.length) : 0
+          };
+        });
+        return { attempts: state.flashAttempts.length, validated: latest.length, strong, needsReview, average, revisions: Math.max(0, state.flashAttempts.length - latest.length), branchRows };
+      }
+
       function readinessBreakdown() {
         const mastery = questionMasterySummary();
         const scenarioTotal = scenarios.reduce((sum, scenario) => sum + scenarioCompositeScore(scenario.id), 0);
@@ -8758,8 +8801,8 @@
         const coachPct = (passedCoachCategories.size / Math.max(1, Object.keys(coachCategories).length)) * .6 + (coachAverage / 100) * coachSampleWeight * .4;
         const shiftBest = state.shiftHistory.length ? Math.max(...state.shiftHistory.map(run => run.passed ? run.score : Math.min(run.score, 69))) : 0;
         const guideCount = Object.keys(state.guideRead).filter(id => state.guideRead[id]).length;
-        const goodCards = Object.values(state.cardRatings).filter(value => value === 'good').length;
-        const retentionPct = Math.min(1, questionDurableCount() / 30) * .7 + Math.min(1, goodCards / flashcards.length) * .3;
+        const flashEvidence = flashEvidenceSummary();
+        const retentionPct = Math.min(1, questionDurableCount() / 30) * .6 + Math.min(1, flashEvidence.strong / flashcards.length) * .4;
         const attemptWeight = Math.min(1, questionAttempts() / 50);
         const component = (id, label, maximum, ratio, detail, action) => {
           const pct = Math.max(0, Math.min(100, Math.round(ratio * 100)));
@@ -8774,7 +8817,7 @@
           component('interview', 'Interview transfer', 5, coachPct, passedCoachCategories.size + ' tracks passed | ' + coachRuns.length + ' scored reps', 'Open Interview Studio'),
           component('shift', 'Full-shift control', 5, shiftBest / 100, state.shiftHistory.length ? 'Best gated shift ' + shiftBest + '%' : 'No full trading day recorded', 'Open Shift Desk'),
           component('guides', 'Operator guides', 5, guideCount / guideLibrary.length, guideCount + ' of ' + guideLibrary.length + ' field guides completed', 'Read weakest guide'),
-          component('retention', 'Recall durability', 5, retentionPct, questionDurableCount() + ' durable questions | ' + goodCards + ' stable cards', 'Clear retention queue'),
+          component('retention', 'Recall durability', 5, retentionPct, questionDurableCount() + ' durable questions | ' + flashEvidence.strong + ' strong typed cards', 'Clear retention queue'),
           component('quality', 'Decision quality', 5, questionAccuracy() / 100 * attemptWeight, questionAttempts() + ' decisions | ' + Math.round(attemptWeight * 100) + '% sample confidence', 'Calibrate decisions')
         ];
         return { total: Math.min(100, Math.round(components.reduce((sum, item) => sum + item.earned, 0))), components, mastery };
@@ -11893,6 +11936,12 @@
         return `<section class="ops-readiness-console" aria-labelledby="ops-readiness-title"><div class="ops-readiness-head"><div class="ops-readiness-score"><strong>${model.total}%</strong><span><span class="ops-status-label" data-status="${status.tone}">${esc(status.label.toUpperCase())}</span><small class="text-muted">Evidence weighted, not activity weighted</small></span></div><div><div class="ops-section-head"><div><h3 id="ops-readiness-title">Operational readiness evidence</h3><div class="text-small text-muted">Ten independent proof lanes expose what is strong, what is provisional, and what should be trained next.</div></div><span class="text-small text-muted">Weakest: ${esc(weakest.label)}</span></div><div class="ops-progress" role="progressbar" aria-label="Evidence-weighted readiness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${model.total}"><span style="width:${model.total}%"></span></div></div></div><div class="ops-mastery-ladder" aria-label="Question evidence states">${ladder.map(([id,label,count]) => `<div data-state="${id}"><span class="text-small text-muted">${esc(label.toUpperCase())}</span><strong>${count}</strong><small>${id === 'mastered' ? MASTERY_THRESHOLD + '+ distinct-day points' : id === 'durable' ? DURABLE_MASTERY + ' points + retention' : id === 'repair' ? 'Active evidence break' : id === 'learning' ? 'Proof still developing' : 'No decision recorded'}</small></div>`).join('')}</div><div class="ops-readiness-components">${model.components.map(item => `<div class="ops-readiness-row"><span><strong>${esc(item.label)}</strong><small class="text-muted">${esc(item.detail)}</small></span><div class="ops-mini-progress" role="progressbar" aria-label="${esc(item.label)} readiness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${item.pct}"><span style="width:${item.pct}%"></span></div><strong>${item.earned.toFixed(1)} / ${item.maximum}</strong><button type="button" class="btn ${item.id === weakest.id ? 'btn-primary' : ''}" data-action="readiness-action" data-id="${item.id}">${esc(item.action)}<i data-lucide="arrow-up-right" aria-hidden="true"></i></button></div>`).join('')}</div></section>`;
       }
 
+      function renderFlashEvidenceCenter() {
+        const summary = flashEvidenceSummary();
+        const recent = state.flashAttempts.slice(-5).reverse();
+        return `<section class="ops-profile-section"><div class="ops-section-head"><div><h3>Typed recall evidence</h3><div class="text-small text-muted">Latest score per card, revision depth, and branch coverage from written retrieval</div></div><button type="button" class="btn ${summary.needsReview ? 'btn-primary' : ''}" data-action="open-flash-review"><i data-lucide="layers-3" aria-hidden="true"></i>${summary.needsReview ? 'Repair ' + summary.needsReview : 'Open recall deck'}</button></div><div class="ops-flash-evidence-kpis"><div><span class="text-small text-muted">Validated cards</span><strong>${summary.validated} / ${flashcards.length}</strong></div><div><span class="text-small text-muted">Strong recall</span><strong>${summary.strong}</strong></div><div><span class="text-small text-muted">Latest average</span><strong>${summary.average}%</strong></div><div><span class="text-small text-muted">Saved revisions</span><strong>${summary.revisions}</strong></div></div><div class="ops-flash-evidence-layout"><div class="ops-progress-domains">${summary.branchRows.map(branch => `<div class="ops-progress-domain"><div class="ops-section-head"><span><span class="ops-branch-mark" style="--branch-color:var(--viz-series-${branch.color})"></span> ${esc(branch.name)}</span><span class="text-small">${branch.validated}/${branch.total} | ${branch.average}%</span></div><div class="ops-mini-progress" role="progressbar" aria-label="${esc(branch.name)} typed recall coverage" aria-valuemin="0" aria-valuemax="${branch.total}" aria-valuenow="${branch.validated}"><span style="width:${branch.total ? Math.round(branch.validated / branch.total * 100) : 0}%;background:var(--viz-series-${branch.color})"></span></div></div>`).join('')}</div><div><div class="ops-section-head"><strong>Recent written evidence</strong><span class="text-small text-muted">Latest five</span></div><div class="ops-playlist-list">${recent.map(attempt => { const card = flashcards.find(item => item.id === attempt.cardId); return `<button type="button" class="btn btn-ghost ops-playlist-row" data-action="flash-card-open" data-id="${esc(attempt.cardId)}"><span><strong>${esc(card?.q || attempt.cardId)}</strong><span class="text-small text-muted">${new Date(attempt.createdAt).toLocaleString()} | ${attempt.wordCount} words</span></span><span class="ops-status-label" data-status="${attempt.score >= 80 ? 'mastered' : attempt.resolved ? 'learning' : 'due'}">${attempt.score}%</span></button>`; }).join('') || '<div class="text-small text-muted">Your first validated recall will appear here.</div>'}</div></div></div></section>`;
+      }
+
       function renderProfile() {
         const info = levelInfo();
         const initials = state.profileName.split(/\s+/).filter(Boolean).slice(0,2).map(part => part[0]?.toUpperCase()).join('') || 'OP';
@@ -11914,6 +11963,7 @@
           <section class="ops-profile-showcase"><div class="ops-rank-emblem"><span><i data-lucide="shield-check" aria-hidden="true"></i><strong>${esc(initials)}</strong><span class="text-small">RANK ${levels.indexOf(info.current) + 1}</span></span></div><div><div class="ops-section-head"><div><h3>Operator badge shelf</h3><div class="text-small text-muted">Milestones turn from muted to active as evidence accumulates</div></div><span class="viz-badge">${unlocked.length} UNLOCKED</span></div><div class="ops-badge-shelf">${badgeShelf.map((item,index) => `<div class="ops-badge-token ${item.unlocked ? 'is-unlocked' : ''}" style="--badge-color:var(--viz-series-${index % 6 + 1})"><i data-lucide="${item.unlocked ? item.icon : 'lock-keyhole'}" aria-hidden="true"></i><strong>${esc(item.name)}</strong><span class="text-small">${item.unlocked ? 'Unlocked' : 'Locked'}</span></div>`).join('')}</div></div></section>
           <div class="viz-grid ops-progress-kpis"><div class="card viz-stat"><span class="text-small text-muted">Readiness</span><span class="viz-stat-value">${readiness()}%</span><span>${readinessStatus().label}</span></div><div class="card viz-stat"><span class="text-small text-muted">Unique attempted</span><span class="viz-stat-value">${uniqueAttempted}</span><span>${questionMasteredCount()} mastered | ${questionDurableCount()} durable</span></div><div class="card viz-stat"><span class="text-small text-muted">Decision accuracy</span><span class="viz-stat-value">${questionAccuracy()}%</span><span>${questionCorrect()} / ${questionAttempts()} choices</span></div><div class="card viz-stat"><span class="text-small text-muted">Pressure passes</span><span class="viz-stat-value">${scenarioPasses + drillPasses + triagePasses}</span><span>${scenarioPasses} labs | ${triagePasses} triage | ${drillPasses} drills</span></div></div>
           ${renderReadinessConsole()}
+          ${renderFlashEvidenceCenter()}
           ${renderCalibrationProfile()}
           ${renderCoachEvidenceCenter()}
           ${renderTriageEvidenceCenter()}
@@ -12696,6 +12746,15 @@
           }
         }
         if (action === 'open-bank') { navigateAnimated(() => { state.activeTab = 'practice'; state.practiceView = 'quiz'; state.questionFocusMode = false; state.quiz = null; }); return; }
+        if (action === 'open-flash-review') {
+          navigateAnimated(() => { state.activeTab = 'practice'; state.practiceView = 'flash'; state.flashStatus = flashEvidenceSummary().needsReview ? 'needs-review' : 'all'; state.flashFilter = 'all'; state.flashActiveId = ''; state.flashIndex = 0; });
+          return;
+        }
+        if (action === 'flash-card-open') {
+          if (!flashcards.some(card => card.id === id)) { notice('That flashcard is no longer available.'); return; }
+          navigateAnimated(() => { state.activeTab = 'practice'; state.practiceView = 'flash'; state.flashFilter = 'all'; state.flashStatus = 'all'; state.flashActiveId = id; state.flashRevealed = false; state.selectedFlashAttempt = latestFlashAttempt(id)?.id || ''; });
+          return;
+        }
         if (action === 'open-question') { navigateAnimated(() => { state.activeTab = 'practice'; state.practiceView = 'quiz'; makeQuiz('single', [id], 'bank'); }); return; }
         if (action === 'practice-run-open') {
           const run = state.quizHistory.find(item => item.id === id);

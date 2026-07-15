@@ -411,3 +411,13 @@ test('flashcard focus and keyboard controls remain explicit and accessible', () 
   assert.match(source, /root\.querySelector\('#ops-flash-draft'\)\?\.focus/);
   assert.match(source, /@media \(max-width: 760px\)[\s\S]*?\.ops-flash-score-grid/);
 });
+
+test('typed recall evidence contributes to profile and readiness', () => {
+  assert.match(source, /function flashEvidenceSummary\(\)/);
+  assert.match(source, /function renderFlashEvidenceCenter\(\)/);
+  assert.match(source, /Typed recall evidence/);
+  assert.match(source, /data-action="flash-card-open"/);
+  assert.match(source, /const flashEvidence = flashEvidenceSummary\(\)/);
+  assert.match(source, /flashEvidence\.strong \/ flashcards\.length/);
+  assert.match(source, /renderFlashEvidenceCenter\(\)/);
+});
