@@ -1502,6 +1502,45 @@
       min-height: 24px;
     }
 
+    #ops-ascent-v1 .ops-flash-review {
+      display: grid;
+      gap: 14px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    #ops-ascent-v1 .ops-flash-score-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    #ops-ascent-v1 .ops-flash-score-grid > div {
+      display: grid;
+      gap: 3px;
+      min-height: 72px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      background: var(--muted);
+    }
+
+    #ops-ascent-v1 .ops-flash-concepts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    #ops-ascent-v1 .ops-flash-concepts > div {
+      display: grid;
+      align-content: start;
+      gap: 7px;
+    }
+
+    #ops-ascent-v1 .ops-flash-concepts ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
     #ops-ascent-v1 .ops-breakdown {
       display: grid;
       gap: 8px;
@@ -10401,8 +10440,28 @@
         return state.flashDrafts?.[cardId]?.text || '';
       }
 
+      function flashAttemptsFor(cardId) {
+        return state.flashAttempts.filter(attempt => attempt.cardId === cardId);
+      }
+
+      function latestFlashAttempt(cardId) {
+        return flashAttemptsFor(cardId).at(-1) || null;
+      }
+
       function flashWordCount(value) {
         return String(value || '').trim().split(/\s+/).filter(Boolean).length;
+      }
+
+      function renderFlashAttempt(attempt, draft) {
+        if (!attempt) return '';
+        const tone = attempt.verdict === 'strong' ? 'mastered' : attempt.resolved ? 'learning' : 'due';
+        const changed = attempt.answer !== String(draft || '').trim();
+        return `<section class="ops-flash-review" aria-label="Validated recall evidence">
+          <div class="ops-section-head"><div><div class="ops-inline"><span class="ops-status-label" data-status="${tone}">${esc(attempt.verdict.toUpperCase())}</span>${changed ? '<span class="ops-status-label" data-status="due">DRAFT CHANGED</span>' : ''}</div><h3>${attempt.score}% recall evidence</h3><div class="text-small text-muted">Validated ${new Date(attempt.createdAt).toLocaleString()} | rubric v${attempt.rubricVersion}</div></div><div class="ops-score-ring" style="--score-angle:${attempt.score * 3.6}deg"><span>${attempt.score}%</span></div></div>
+          <div class="ops-flash-score-grid"><div><span class="text-small text-muted">Concept coverage</span><strong>${attempt.coverageScore} / 60</strong></div><div><span class="text-small text-muted">Answer structure</span><strong>${attempt.structureScore} / 25</strong></div><div><span class="text-small text-muted">Operational specificity</span><strong>${attempt.specificityScore} / 15</strong></div></div>
+          <div class="ops-flash-concepts"><div><strong>Detected concepts</strong>${attempt.matched.length ? `<ul>${attempt.matched.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : '<span class="text-small text-muted">No rubric concepts were detected yet.</span>'}</div><div><strong>Strengthen next</strong>${attempt.missing.length ? `<ul>${attempt.missing.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : '<span class="text-small text-muted">Every core concept was detected.</span>'}</div></div>
+          <div class="text-small text-muted">This is a deterministic keyword-and-structure check. Use the sealed reference to audit nuance after you commit your answer.</div>
+        </section>`;
       }
 
       function renderFlash() {
@@ -10414,6 +10473,7 @@
         const { card, index: idx } = current;
         const draft = flashDraftFor(card.id);
         const words = flashWordCount(draft);
+        const attempt = latestFlashAttempt(card.id);
         const known = Object.values(state.cardRatings).filter(v => v === 'good').length;
         return `
           <section class="ops-section-head"><div><h2>Recall deck</h2><div class="text-small text-muted">${flashcards.length} operations cards | retrieval first, guide second</div></div><span class="viz-badge">${known} strong</span></section>
@@ -10431,12 +10491,14 @@
                   <span class="ops-flash-compose-foot text-small text-muted"><span><strong id="ops-flash-word-count">${words}</strong> words</span><span id="ops-flash-char-count">${draft.length} / 1200</span></span>
                 </label>
                 ${state.flashRevealed ? `<div class="ops-flash-answer"><span class="ops-status-label" data-status="learning">REFERENCE</span><strong>${esc(card.a)}</strong><div class="ops-muted-box">${esc(card.deep)}</div></div>` : ''}
+                ${renderFlashAttempt(attempt, draft)}
               </div>
               <div class="ops-card-actions">
+                <button type="button" class="btn btn-primary" data-action="flash-validate" ${draft.trim().length >= 20 && words >= 4 ? '' : 'disabled'}><i data-lucide="scan-text" aria-hidden="true"></i>${attempt ? 'Validate revision' : 'Validate response'}</button>
                 ${state.flashRevealed ? `
                   <button type="button" class="btn" data-action="flash-grade" data-grade="again"><i data-lucide="rotate-ccw" aria-hidden="true"></i>Again</button>
                   <button type="button" class="btn" data-action="flash-grade" data-grade="hard"><i data-lucide="brain" aria-hidden="true"></i>Hard</button>
-                  <button type="button" class="btn btn-primary" data-action="flash-grade" data-grade="good"><i data-lucide="check" aria-hidden="true"></i>Good</button>` : `<button type="button" class="btn btn-primary" data-action="flash-reveal"><i data-lucide="eye" aria-hidden="true"></i>Reveal reference</button>`}
+                  <button type="button" class="btn" data-action="flash-grade" data-grade="good"><i data-lucide="check" aria-hidden="true"></i>Good</button>` : `<button type="button" class="btn" data-action="flash-reveal"><i data-lucide="eye" aria-hidden="true"></i>Reveal reference</button>`}
               </div>
             </section>
             <section class="ops-breakdown" aria-label="Flashcard branch mastery">
@@ -12109,6 +12171,26 @@
         render();
       }
 
+      function validateFlashDraft() {
+        const current = currentFlashCard();
+        if (!current) { notice('No flashcard is available in this selection.'); return; }
+        const answer = flashDraftFor(current.card.id).trim();
+        if (answer.length < 20 || flashWordCount(answer) < 4) {
+          notice('Write at least four words and 20 characters before validation.');
+          root.querySelector('#ops-flash-draft')?.focus();
+          return;
+        }
+        const attempt = evaluateFlashResponse(current.card, answer);
+        if (!attempt) { notice('That response could not be validated.'); return; }
+        state.flashAttempts = [...state.flashAttempts, attempt].slice(-FLASH_HISTORY_LIMIT);
+        state.selectedFlashAttempt = attempt.id;
+        recordActivity('actions');
+        playSound(attempt.resolved ? 'success' : 'error');
+        notice(`${attempt.score}% recall evidence | ${attempt.verdict.replace('-', ' ')}`);
+        render(true);
+        requestAnimationFrame(() => particleBurst(root.querySelector('.ops-flash-score-grid'), attempt.resolved ? 'success' : 'hard', attempt.score >= 80 ? 18 : 10));
+      }
+
       function answerQuestion(selectedIndex) {
         if (!state.quiz || state.quiz.answered) return;
         const q = quizBank.find(item => item.id === state.quiz.ids[state.quiz.index]);
@@ -12835,7 +12917,8 @@
           answer.push(Number(id)); state.sequenceAnswers[drill.id] = answer; render(); return;
         }
         if (action === 'reset-sequence') { state.sequenceAnswers[state.selectedDrill] = []; render(); return; }
-        if (action === 'flash-reveal') { state.flashRevealed = true; render(); return; }
+        if (action === 'flash-validate') { validateFlashDraft(); return; }
+        if (action === 'flash-reveal') { state.flashRevealed = true; playSound('reveal'); render(); return; }
         if (action === 'flash-grade') { bankFlash(button.dataset.grade); return; }
         if (action === 'guide-select') { state.selectedGuide = id; render(); return; }
         if (action === 'guide-read') {
@@ -13111,8 +13194,10 @@
           state.flashDrafts[cardId] = { text, updatedAt: new Date().toISOString() };
           const words = root.querySelector('#ops-flash-word-count');
           const characters = root.querySelector('#ops-flash-char-count');
+          const validate = root.querySelector('[data-action="flash-validate"]');
           if (words) words.textContent = flashWordCount(text);
           if (characters) characters.textContent = text.length + ' / 1200';
+          if (validate) validate.disabled = text.trim().length < 20 || flashWordCount(text) < 4;
           saveState();
           return;
         }

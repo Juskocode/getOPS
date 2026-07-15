@@ -345,3 +345,13 @@ test('flashcard recall uses a transparent deterministic rubric', () => {
   assert.match(source, /const specificityScore = Math\.min\(15,/);
   assert.match(source, /return normalizeFlashAttempt\(\{/);
 });
+
+test('flashcard validation preserves the answer boundary and waits for the learner', () => {
+  assert.match(source, /function validateFlashDraft\(\)/);
+  assert.match(source, /state\.flashAttempts = \[\.\.\.state\.flashAttempts, attempt\]\.slice\(-FLASH_HISTORY_LIMIT\)/);
+  assert.match(source, /data-action="flash-validate"/);
+  assert.match(source, /data-action="flash-reveal"/);
+  assert.match(source, /renderFlashAttempt\(attempt, draft\)/);
+  const validator = source.slice(source.indexOf('function validateFlashDraft()'), source.indexOf('function answerQuestion('));
+  assert.doesNotMatch(validator, /state\.flashRevealed\s*=\s*true/);
+});
