@@ -355,3 +355,11 @@ test('flashcard validation preserves the answer boundary and waits for the learn
   const validator = source.slice(source.indexOf('function validateFlashDraft()'), source.indexOf('function answerQuestion('));
   assert.doesNotMatch(validator, /state\.flashRevealed\s*=\s*true/);
 });
+
+test('flashcard revisions retain an inspectable evidence history', () => {
+  assert.match(source, /function selectedFlashAttempt\(cardId\)/);
+  assert.match(source, /flashAttemptsFor\(card\.id\)\.slice\(-5\)\.reverse\(\)/);
+  assert.match(source, /data-action="flash-attempt-select"/);
+  assert.match(source, /state\.selectedFlashAttempt = attempt\.id/);
+  assert.match(source, /Attempt history/);
+});
