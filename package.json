@@ -1,0 +1,16 @@
+{
+  "name": "trading-ops-ascent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "npm run build && node --test tests/test_frontend_contract.mjs tests/test_build_contract.mjs"
+  },
+  "dependencies": {
+    "lucide": "1.24.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
