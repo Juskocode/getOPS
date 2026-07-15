@@ -1482,6 +1482,26 @@
       gap: 12px;
     }
 
+    #ops-ascent-v1 .ops-flash-compose {
+      display: grid;
+      gap: 8px;
+      padding-top: 4px;
+    }
+
+    #ops-ascent-v1 .ops-flash-compose textarea {
+      min-height: 150px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    #ops-ascent-v1 .ops-flash-compose-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 24px;
+    }
+
     #ops-ascent-v1 .ops-breakdown {
       display: grid;
       gap: 8px;
@@ -10161,12 +10181,29 @@
         return state.flashFilter === 'all' ? flashcards : flashcards.filter(c => c.branch === state.flashFilter);
       }
 
+      function currentFlashCard(cards = filteredCards()) {
+        if (!cards.length) return null;
+        const index = ((state.flashIndex % cards.length) + cards.length) % cards.length;
+        return { card: cards[index], index };
+      }
+
+      function flashDraftFor(cardId) {
+        return state.flashDrafts?.[cardId]?.text || '';
+      }
+
+      function flashWordCount(value) {
+        return String(value || '').trim().split(/\s+/).filter(Boolean).length;
+      }
+
       function renderFlash() {
         const cards = filteredCards();
         if (!cards.length) state.flashFilter = 'all';
         const active = filteredCards();
-        const idx = ((state.flashIndex % active.length) + active.length) % active.length;
-        const card = active[idx];
+        const current = currentFlashCard(active);
+        if (!current) return '<section class="ops-muted-box">No flashcards are available for this selection.</section>';
+        const { card, index: idx } = current;
+        const draft = flashDraftFor(card.id);
+        const words = flashWordCount(draft);
         const known = Object.values(state.cardRatings).filter(v => v === 'good').length;
         return `
           <section class="ops-section-head"><div><h2>Recall deck</h2><div class="text-small text-muted">${flashcards.length} operations cards | retrieval first, guide second</div></div><span class="viz-badge">${known} strong</span></section>
@@ -10178,13 +10215,18 @@
               <div class="ops-flash-prompt">
                 <div class="ops-inline"><span class="viz-badge">${esc(card.branch.toUpperCase())}</span><span class="text-small text-muted">${idx + 1} / ${active.length}</span></div>
                 <h2>${esc(card.q)}</h2>
-                ${state.flashRevealed ? `<div class="ops-flash-answer"><strong>${esc(card.a)}</strong><div class="ops-muted-box">${esc(card.deep)}</div></div>` : '<div class="text-muted">Recall aloud before revealing.</div>'}
+                <div class="text-muted">Write the decision and the evidence you would say aloud. Your draft saves automatically.</div>
+                <label class="form-label ops-flash-compose">Your recall
+                  <textarea class="form-control" id="ops-flash-draft" data-card="${esc(card.id)}" maxlength="1200" placeholder="Answer from memory before opening the reference...">${esc(draft)}</textarea>
+                  <span class="ops-flash-compose-foot text-small text-muted"><span><strong id="ops-flash-word-count">${words}</strong> words</span><span id="ops-flash-char-count">${draft.length} / 1200</span></span>
+                </label>
+                ${state.flashRevealed ? `<div class="ops-flash-answer"><span class="ops-status-label" data-status="learning">REFERENCE</span><strong>${esc(card.a)}</strong><div class="ops-muted-box">${esc(card.deep)}</div></div>` : ''}
               </div>
               <div class="ops-card-actions">
                 ${state.flashRevealed ? `
                   <button type="button" class="btn" data-action="flash-grade" data-grade="again"><i data-lucide="rotate-ccw" aria-hidden="true"></i>Again</button>
                   <button type="button" class="btn" data-action="flash-grade" data-grade="hard"><i data-lucide="brain" aria-hidden="true"></i>Hard</button>
-                  <button type="button" class="btn btn-primary" data-action="flash-grade" data-grade="good"><i data-lucide="check" aria-hidden="true"></i>Good</button>` : `<button type="button" class="btn btn-primary" data-action="flash-reveal"><i data-lucide="eye" aria-hidden="true"></i>Reveal answer</button>`}
+                  <button type="button" class="btn btn-primary" data-action="flash-grade" data-grade="good"><i data-lucide="check" aria-hidden="true"></i>Good</button>` : `<button type="button" class="btn btn-primary" data-action="flash-reveal"><i data-lucide="eye" aria-hidden="true"></i>Reveal reference</button>`}
               </div>
             </section>
             <section class="ops-breakdown" aria-label="Flashcard branch mastery">
@@ -12852,6 +12894,18 @@
       root.addEventListener('input', (event) => {
         if (event.target.id === 'ops-profile-name') { state.profileName = event.target.value.slice(0,40); saveState(); return; }
         if (event.target.id === 'ops-profile-goal') { state.profileGoal = event.target.value.slice(0,90); saveState(); return; }
+        if (event.target.id === 'ops-flash-draft') {
+          const cardId = String(event.target.dataset.card || '');
+          if (!flashcards.some(card => card.id === cardId)) return;
+          const text = event.target.value.slice(0, 1200);
+          state.flashDrafts[cardId] = { text, updatedAt: new Date().toISOString() };
+          const words = root.querySelector('#ops-flash-word-count');
+          const characters = root.querySelector('#ops-flash-char-count');
+          if (words) words.textContent = flashWordCount(text);
+          if (characters) characters.textContent = text.length + ' / 1200';
+          saveState();
+          return;
+        }
         if (event.target.id === 'ops-sound-volume') {
           state.soundVolume = Math.max(0, Math.min(100, Number(event.target.value) || 0));
           if (audioMaster) audioMaster.gain.value = Math.max(0.0001, state.soundVolume / 100 * .78);
