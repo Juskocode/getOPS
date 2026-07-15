@@ -1,0 +1,11 @@
+.git
+.DS_Store
+data
+dist
+node_modules
+__pycache__
+*.pyc
+*.pyo
+*.db
+*.db-*
+npm-debug.log*
