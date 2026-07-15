@@ -401,3 +401,13 @@ test('typed recall rewards are bounded and share the manual grade award key', ()
   assert.match(source, /state\.cardRatings\[current\.card\.id\] = attempt\.score >= 80 \? 'good'/);
   assert.match(source, /strengthen before XP/);
 });
+
+test('flashcard focus and keyboard controls remain explicit and accessible', () => {
+  assert.match(source, /id="ops-flash-review" tabindex="-1" role="status" aria-live="polite"/);
+  assert.match(source, /aria-keyshortcuts="Control\+Enter Meta\+Enter"/);
+  assert.match(source, /aria-keyshortcuts="ArrowRight"/);
+  assert.match(source, /state\.practiceView === 'flash'/);
+  assert.match(source, /\(event\.ctrlKey \|\| event\.metaKey\) && event\.key === 'Enter'/);
+  assert.match(source, /root\.querySelector\('#ops-flash-draft'\)\?\.focus/);
+  assert.match(source, /@media \(max-width: 760px\)[\s\S]*?\.ops-flash-score-grid/);
+});

@@ -1567,6 +1567,19 @@
       min-width: 0;
     }
 
+    @media (max-width: 760px) {
+      #ops-ascent-v1 .ops-flash-score-grid,
+      #ops-ascent-v1 .ops-flash-concepts {
+        grid-template-columns: 1fr;
+      }
+
+      #ops-ascent-v1 .ops-flash-compose-foot {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+      }
+    }
+
     #ops-ascent-v1 .ops-breakdown-row {
       display: grid;
       grid-template-columns: minmax(120px, 0.6fr) minmax(120px, 1fr) auto;
@@ -10519,7 +10532,7 @@
         if (!attempt) return '';
         const tone = attempt.verdict === 'strong' ? 'mastered' : attempt.resolved ? 'learning' : 'due';
         const changed = attempt.answer !== String(draft || '').trim();
-        return `<section class="ops-flash-review" aria-label="Validated recall evidence">
+        return `<section class="ops-flash-review" id="ops-flash-review" tabindex="-1" role="status" aria-live="polite" aria-label="Validated recall evidence">
           <div class="ops-section-head"><div><div class="ops-inline"><span class="ops-status-label" data-status="${tone}">${esc(attempt.verdict.toUpperCase())}</span>${changed ? '<span class="ops-status-label" data-status="due">DRAFT CHANGED</span>' : ''}</div><h3>${attempt.score}% recall evidence</h3><div class="text-small text-muted">Validated ${new Date(attempt.createdAt).toLocaleString()} | rubric v${attempt.rubricVersion}</div></div><div class="ops-score-ring" style="--score-angle:${attempt.score * 3.6}deg"><span>${attempt.score}%</span></div></div>
           <div class="ops-flash-score-grid"><div><span class="text-small text-muted">Concept coverage</span><strong>${attempt.coverageScore} / 60</strong></div><div><span class="text-small text-muted">Answer structure</span><strong>${attempt.structureScore} / 25</strong></div><div><span class="text-small text-muted">Operational specificity</span><strong>${attempt.specificityScore} / 15</strong></div></div>
           <div class="ops-flash-concepts"><div><strong>Detected concepts</strong>${attempt.matched.length ? `<ul>${attempt.matched.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : '<span class="text-small text-muted">No rubric concepts were detected yet.</span>'}</div><div><strong>Strengthen next</strong>${attempt.missing.length ? `<ul>${attempt.missing.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : '<span class="text-small text-muted">Every core concept was detected.</span>'}</div></div>
@@ -10563,13 +10576,13 @@
                 ${renderFlashAttempt(attempt, draft)}
               </div>
               <div class="ops-card-actions">
-                <button type="button" class="btn btn-primary" data-action="flash-validate" ${draft.trim().length >= 20 && words >= 4 ? '' : 'disabled'}><i data-lucide="scan-text" aria-hidden="true"></i>${attempt ? 'Validate revision' : 'Validate response'}</button>
+                <button type="button" class="btn btn-primary" data-action="flash-validate" title="Validate typed recall" aria-keyshortcuts="Control+Enter Meta+Enter" ${draft.trim().length >= 20 && words >= 4 ? '' : 'disabled'}><i data-lucide="scan-text" aria-hidden="true"></i>${attempt ? 'Validate revision' : 'Validate response'}</button>
                 ${state.flashRevealed ? `
                   <button type="button" class="btn" data-action="flash-grade" data-grade="again"><i data-lucide="rotate-ccw" aria-hidden="true"></i>Again</button>
                   <button type="button" class="btn" data-action="flash-grade" data-grade="hard"><i data-lucide="brain" aria-hidden="true"></i>Hard</button>
-                  <button type="button" class="btn" data-action="flash-grade" data-grade="good"><i data-lucide="check" aria-hidden="true"></i>Good</button>` : `<button type="button" class="btn" data-action="flash-reveal"><i data-lucide="eye" aria-hidden="true"></i>Reveal reference</button>`}
-                <button type="button" class="btn" data-action="flash-next" ${alternatives || (!state.flashActiveId && active.length > 1) ? '' : 'disabled'}><i data-lucide="arrow-right" aria-hidden="true"></i>Next</button>
-                <button type="button" class="btn" data-action="flash-shuffle" ${alternatives ? '' : 'disabled'}><i data-lucide="shuffle" aria-hidden="true"></i>Shuffle</button>
+                  <button type="button" class="btn" data-action="flash-grade" data-grade="good"><i data-lucide="check" aria-hidden="true"></i>Good</button>` : `<button type="button" class="btn" data-action="flash-reveal" title="Open the reference answer" aria-keyshortcuts="R"><i data-lucide="eye" aria-hidden="true"></i>Reveal reference</button>`}
+                <button type="button" class="btn" data-action="flash-next" title="Move to the next filtered card" aria-keyshortcuts="ArrowRight" ${alternatives || (!state.flashActiveId && active.length > 1) ? '' : 'disabled'}><i data-lucide="arrow-right" aria-hidden="true"></i>Next</button>
+                <button type="button" class="btn" data-action="flash-shuffle" title="Choose a filtered card without a recent repeat" aria-keyshortcuts="S" ${alternatives ? '' : 'disabled'}><i data-lucide="shuffle" aria-hidden="true"></i>Shuffle</button>
               </div>
             </section>
             <section class="ops-breakdown" aria-label="Flashcard branch mastery">
@@ -12284,6 +12297,7 @@
         state.selectedFlashAttempt = '';
         playSound(mode === 'shuffle' ? 'queue' : 'select');
         render(true);
+        requestAnimationFrame(() => root.querySelector('#ops-flash-draft')?.focus({ preventScroll: true }));
       }
 
       function validateFlashDraft() {
@@ -12307,7 +12321,11 @@
         playSound(attempt.resolved ? 'success' : 'error');
         notice(`${attempt.score}% recall evidence | ${attempt.verdict.replace('-', ' ')}${recallXp ? xpAwarded ? ` | +${recallXp} XP` : ' | daily XP already banked' : ' | strengthen before XP'}`);
         render(true);
-        requestAnimationFrame(() => particleBurst(root.querySelector('.ops-flash-score-grid'), attempt.resolved ? 'success' : 'hard', attempt.score >= 80 ? 18 : 10));
+        requestAnimationFrame(() => {
+          const review = root.querySelector('#ops-flash-review');
+          review?.focus({ preventScroll: true });
+          particleBurst(review || root.querySelector('.ops-flash-score-grid'), attempt.resolved ? 'success' : 'hard', attempt.score >= 80 ? 18 : 10);
+        });
       }
 
       function answerQuestion(selectedIndex) {
@@ -13238,6 +13256,22 @@
             state.questionFocusMode = false; render(true);
           } else if (state.learningFocus) {
             state.learningFocus = false; state.lessonTab = 'question'; render(true); requestAnimationFrame(() => recenterTree(false));
+          }
+          return;
+        }
+        if (state.activeTab === 'practice' && state.practiceView === 'flash') {
+          if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+            const target = root.querySelector('[data-action="flash-validate"]');
+            if (target && !target.disabled) { event.preventDefault(); target.click(); }
+          } else if (!typing && !event.repeat && event.key === 'ArrowRight') {
+            const target = root.querySelector('[data-action="flash-next"]');
+            if (target && !target.disabled) { event.preventDefault(); target.click(); }
+          } else if (!typing && !event.repeat && event.key.toLowerCase() === 's') {
+            const target = root.querySelector('[data-action="flash-shuffle"]');
+            if (target && !target.disabled) { event.preventDefault(); target.click(); }
+          } else if (!typing && !event.repeat && event.key.toLowerCase() === 'r') {
+            const target = root.querySelector('[data-action="flash-reveal"]');
+            if (target) { event.preventDefault(); target.click(); }
           }
           return;
         }
