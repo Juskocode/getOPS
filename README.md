@@ -93,8 +93,14 @@ cd "/Users/afreitas/Documents/Quant Trader interview prep/trading-ops-ascent"
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 npm test
 npm run doctor
+npm run verify:release
 ./scripts/compose.sh config -q
 ```
+
+`verify:release` runs the complete repository doctor, starts the built application
+against a disposable SQLite database, exercises the state API over HTTP, verifies
+written-recall evidence round trips unchanged, and confirms forged rubric totals
+are rejected. It never opens or modifies the normal progress database.
 
 The API exposes `GET /api/health/live`, `GET /api/health/ready`, backward-compatible `GET /api/health`, `GET /api/diagnostics`, `GET /api/state`, `PUT /api/state`, `GET /api/history`, and `GET /api/export` for the local profile. State reads support `ETag`/`If-None-Match`; state writes require both the latest revision and matching `If-Match` when supplied. Concurrent workers are serialized around the revision read/write transaction, and concurrent tabs merge progress instead of silently overwriting newer data.
 

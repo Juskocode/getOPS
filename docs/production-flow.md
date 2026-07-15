@@ -292,6 +292,18 @@ The safe default binds the edge to `127.0.0.1:8766`. Put TLS and authentication 
 
 ## Operations
 
+Before changing the live process, run the isolated release gate:
+
+```bash
+npm run verify:release
+```
+
+The gate builds the release, runs frontend and backend contracts, starts the
+origin on an ephemeral loopback port with a temporary SQLite database, checks
+static caching and ETag behavior, saves valid flashcard evidence, rejects a
+forged rubric score, verifies export and database integrity, and removes all
+temporary state on exit.
+
 ```bash
 ./scripts/compose.sh ps
 ./scripts/compose.sh logs -f origin edge
