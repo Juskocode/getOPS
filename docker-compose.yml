@@ -1,0 +1,70 @@
+name: trading-ops-ascent
+
+services:
+  origin:
+    build:
+      context: .
+      dockerfile: deploy/backend.Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      OPS_DB_PATH: /data/trading_ops_ascent.db
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
+    volumes:
+      - ascent-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 384m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8766/api/health/ready', timeout=2).read()"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  edge:
+    build:
+      context: .
+      dockerfile: deploy/edge.Dockerfile
+    restart: unless-stopped
+    init: true
+    depends_on:
+      origin:
+        condition: service_healthy
+    ports:
+      - "${OPS_BIND:-127.0.0.1}:${OPS_PORT:-8766}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=0700,uid=101,gid=101
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/api/health/live"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  ascent-data:
