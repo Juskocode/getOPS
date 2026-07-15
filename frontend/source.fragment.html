@@ -7565,7 +7565,7 @@
         xp: 0, completed: {}, awards: {}, scenarioScores: {}, drillScores: {}, stageQuizScores: {}, checkpointStage: 'signal',
         cardRatings: {}, streak: 0, lastActive: '', selectedModule: 'feed-state', selectedScenario: 'auction-echo',
         scenarioStep: {}, scenarioStage: {}, scenarioResult: {}, scenarioAnswers: {}, scenarioAftershockAnswers: {}, scenarioAftershockResult: {}, scenarioHistory: [], selectedIncidentRun: '', remediationCycles: [], transferReviews: [], activeTransferReviewId: '', scenarioPlaybackSpeed: 1400, selectedDrill: 'timestamp-path', drillResult: {}, sequenceAnswers: {},
-        flashIndex: 0, flashFilter: 'all', flashStatus: 'all', flashRevealed: false, flashDrafts: {}, flashAttempts: [], selectedFlashAttempt: '', quiz: null, moduleFeedback: {},
+        flashIndex: 0, flashActiveId: '', flashRecent: [], flashFilter: 'all', flashStatus: 'all', flashRevealed: false, flashDrafts: {}, flashAttempts: [], selectedFlashAttempt: '', quiz: null, moduleFeedback: {},
         pathMode: 'tree', treeZoom: 0.85, treeSearch: '', recentModules: [], nodeNotes: {},
         questionStats: {}, combo: 0, bestCombo: 0, dailyXp: {}, dailyActivity: {},
         bestMockScore: 0, quizHistory: [], selectedPracticeRun: '', quizBranch: 'all', quizDifficulty: 'all', quizLevel: 'all', quizType: 'all', quizCount: 15,
@@ -7654,6 +7654,8 @@
         merged.flashFilter = merged.flashFilter === 'all' || branches.some(branch => branch.id === merged.flashFilter) ? merged.flashFilter : 'all';
         merged.flashStatus = FLASH_STATUSES.has(merged.flashStatus) ? merged.flashStatus : 'all';
         merged.flashIndex = Math.max(0, Math.floor(Number(merged.flashIndex) || 0));
+        merged.flashActiveId = flashCardIds.has(String(merged.flashActiveId || '')) ? String(merged.flashActiveId) : '';
+        merged.flashRecent = Array.isArray(merged.flashRecent) ? [...new Set(merged.flashRecent.map(String).filter(id => flashCardIds.has(id)))].slice(-6) : [];
         merged.flashRevealed = Boolean(merged.flashRevealed);
         const flashDraftSource = merged.flashDrafts && typeof merged.flashDrafts === 'object' && !Array.isArray(merged.flashDrafts) ? merged.flashDrafts : {};
         merged.flashDrafts = Object.fromEntries(Object.entries(flashDraftSource).filter(([cardId, draft]) => flashCardIds.has(cardId) && draft && typeof draft === 'object' && !Array.isArray(draft)).map(([cardId, draft]) => [cardId, {
@@ -10481,6 +10483,12 @@
       }
 
       function currentFlashCard(cards = filteredCards()) {
+        const pinned = state.flashActiveId ? flashcards.find(card => card.id === state.flashActiveId) : null;
+        const branchMatch = pinned && (state.flashFilter === 'all' || pinned.branch === state.flashFilter);
+        if (branchMatch) {
+          const branchDeck = state.flashFilter === 'all' ? flashcards : flashcards.filter(card => card.branch === state.flashFilter);
+          return { card: pinned, index: Math.max(0, branchDeck.findIndex(card => card.id === pinned.id)), pinned: true };
+        }
         if (!cards.length) return null;
         const index = ((state.flashIndex % cards.length) + cards.length) % cards.length;
         return { card: cards[index], index };
@@ -10537,6 +10545,7 @@
         const words = flashWordCount(draft);
         const attempt = selectedFlashAttempt(card.id);
         const cardAttempts = flashAttemptsFor(card.id).slice(-5).reverse();
+        const alternatives = active.filter(item => item.id !== card.id).length;
         return `
           ${heading}
           ${controls}
@@ -10559,6 +10568,8 @@
                   <button type="button" class="btn" data-action="flash-grade" data-grade="again"><i data-lucide="rotate-ccw" aria-hidden="true"></i>Again</button>
                   <button type="button" class="btn" data-action="flash-grade" data-grade="hard"><i data-lucide="brain" aria-hidden="true"></i>Hard</button>
                   <button type="button" class="btn" data-action="flash-grade" data-grade="good"><i data-lucide="check" aria-hidden="true"></i>Good</button>` : `<button type="button" class="btn" data-action="flash-reveal"><i data-lucide="eye" aria-hidden="true"></i>Reveal reference</button>`}
+                <button type="button" class="btn" data-action="flash-next" ${alternatives || (!state.flashActiveId && active.length > 1) ? '' : 'disabled'}><i data-lucide="arrow-right" aria-hidden="true"></i>Next</button>
+                <button type="button" class="btn" data-action="flash-shuffle" ${alternatives ? '' : 'disabled'}><i data-lucide="shuffle" aria-hidden="true"></i>Shuffle</button>
               </div>
             </section>
             <section class="ops-breakdown" aria-label="Flashcard branch mastery">
@@ -12222,14 +12233,57 @@
       }
 
       function bankFlash(grade) {
-        const cards = filteredCards();
-        const card = cards[((state.flashIndex % cards.length) + cards.length) % cards.length];
+        const current = currentFlashCard();
+        if (!current) { notice('No flashcard is available in this selection.'); return; }
+        const card = current.card;
         state.cardRatings[card.id] = grade;
         const points = grade === 'good' ? 6 : grade === 'hard' ? 3 : 1;
         award('flash:' + card.id + ':' + todayKey(), points, card.q + ' recall');
-        state.flashIndex = (state.flashIndex + 1) % cards.length;
+        advanceFlashCard('next');
+      }
+
+      function flashRandomIndex(length) {
+        if (length <= 1) return 0;
+        if (window.crypto?.getRandomValues) {
+          const values = new Uint32Array(1);
+          window.crypto.getRandomValues(values);
+          return values[0] % length;
+        }
+        return Math.floor(Math.random() * length);
+      }
+
+      function advanceFlashCard(mode = 'next') {
+        const deck = filteredCards();
+        const current = currentFlashCard(deck)?.card || null;
+        let candidates = deck.filter(card => card.id !== current?.id);
+        if (!candidates.length) {
+          state.flashActiveId = '';
+          state.flashRevealed = false;
+          state.selectedFlashAttempt = '';
+          notice('No additional cards match the current filters.');
+          render();
+          return;
+        }
+        let next;
+        if (mode === 'shuffle') {
+          const belowStrong = candidates.filter(card => (latestFlashAttempt(card.id)?.score || 0) < 80);
+          if (belowStrong.length) candidates = belowStrong;
+          const notRecent = candidates.filter(card => !state.flashRecent.includes(card.id));
+          if (notRecent.length) candidates = notRecent;
+          next = candidates[flashRandomIndex(candidates.length)];
+        } else {
+          const currentIndex = deck.findIndex(card => card.id === current?.id);
+          next = currentIndex >= 0 ? deck[(currentIndex + 1) % deck.length] : deck[0];
+          if (next?.id === current?.id) next = candidates[0];
+        }
+        if (!next) return;
+        if (current) state.flashRecent = [...state.flashRecent.filter(id => id !== current.id), current.id].slice(-6);
+        state.flashActiveId = next.id;
+        state.flashIndex = Math.max(0, deck.findIndex(card => card.id === next.id));
         state.flashRevealed = false;
-        render();
+        state.selectedFlashAttempt = '';
+        playSound(mode === 'shuffle' ? 'queue' : 'select');
+        render(true);
       }
 
       function validateFlashDraft() {
@@ -12244,6 +12298,7 @@
         const attempt = evaluateFlashResponse(current.card, answer);
         if (!attempt) { notice('That response could not be validated.'); return; }
         state.flashAttempts = [...state.flashAttempts, attempt].slice(-FLASH_HISTORY_LIMIT);
+        state.flashActiveId = current.card.id;
         state.selectedFlashAttempt = attempt.id;
         recordActivity('actions');
         playSound(attempt.resolved ? 'success' : 'error');
@@ -12979,6 +13034,8 @@
         }
         if (action === 'reset-sequence') { state.sequenceAnswers[state.selectedDrill] = []; render(); return; }
         if (action === 'flash-validate') { validateFlashDraft(); return; }
+        if (action === 'flash-next') { advanceFlashCard('next'); return; }
+        if (action === 'flash-shuffle') { advanceFlashCard('shuffle'); return; }
         if (action === 'flash-clear-filters') { state.flashFilter = 'all'; state.flashStatus = 'all'; state.flashIndex = 0; state.flashRevealed = false; render(); return; }
         if (action === 'flash-reveal') { state.flashRevealed = true; playSound('reveal'); render(); return; }
         if (action === 'flash-attempt-select') {
@@ -13205,12 +13262,14 @@
         if (event.target.id === 'ops-flash-filter') {
           state.flashFilter = event.target.value;
           state.flashIndex = 0;
+          state.flashActiveId = '';
           state.flashRevealed = false;
           render();
         }
         if (event.target.id === 'ops-flash-status') {
           state.flashStatus = FLASH_STATUSES.has(event.target.value) ? event.target.value : 'all';
           state.flashIndex = 0;
+          state.flashActiveId = '';
           state.flashRevealed = false;
           state.selectedFlashAttempt = '';
           render();

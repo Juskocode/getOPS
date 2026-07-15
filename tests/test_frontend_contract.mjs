@@ -381,3 +381,15 @@ test('flashcard filters expose actionable evidence states without dead ends', ()
   assert.match(source, /data-action="flash-clear-filters"/);
   assert.match(source, /No cards match this evidence view/);
 });
+
+test('flashcard navigation waits for explicit next and avoids weak repeats', () => {
+  assert.match(source, /flashActiveId: '', flashRecent: \[\]/);
+  assert.match(source, /state\.flashActiveId = current\.card\.id/);
+  assert.match(source, /data-action="flash-next"/);
+  assert.match(source, /data-action="flash-shuffle"/);
+  assert.match(source, /function advanceFlashCard\(mode = 'next'\)/);
+  assert.match(source, /const belowStrong = candidates\.filter/);
+  assert.match(source, /const notRecent = candidates\.filter/);
+  const validator = source.slice(source.indexOf('function validateFlashDraft()'), source.indexOf('function answerQuestion('));
+  assert.doesNotMatch(validator, /advanceFlashCard\(/);
+});
