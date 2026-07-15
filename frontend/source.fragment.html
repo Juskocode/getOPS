@@ -4495,8 +4495,8 @@
       if (!root || root.dataset.ready === 'true') return;
       root.dataset.ready = 'true';
 
-      const STORAGE_KEY = 'eqvilent-trading-ops-ascent-v21';
-      const LEGACY_STORAGE_KEYS = ['eqvilent-trading-ops-ascent-v20', 'eqvilent-trading-ops-ascent-v19', 'eqvilent-trading-ops-ascent-v18', 'eqvilent-trading-ops-ascent-v17', 'eqvilent-trading-ops-ascent-v16', 'eqvilent-trading-ops-ascent-v15', 'eqvilent-trading-ops-ascent-v14', 'eqvilent-trading-ops-ascent-v13', 'eqvilent-trading-ops-ascent-v12', 'eqvilent-trading-ops-ascent-v11', 'eqvilent-trading-ops-ascent-v10', 'eqvilent-trading-ops-ascent-v9', 'eqvilent-trading-ops-ascent-v8', 'eqvilent-trading-ops-ascent-v7', 'eqvilent-trading-ops-ascent-v6', 'eqvilent-trading-ops-ascent-v4', 'eqvilent-trading-ops-ascent-v3'];
+      const STORAGE_KEY = 'eqvilent-trading-ops-ascent-v22';
+      const LEGACY_STORAGE_KEYS = ['eqvilent-trading-ops-ascent-v21', 'eqvilent-trading-ops-ascent-v20', 'eqvilent-trading-ops-ascent-v19', 'eqvilent-trading-ops-ascent-v18', 'eqvilent-trading-ops-ascent-v17', 'eqvilent-trading-ops-ascent-v16', 'eqvilent-trading-ops-ascent-v15', 'eqvilent-trading-ops-ascent-v14', 'eqvilent-trading-ops-ascent-v13', 'eqvilent-trading-ops-ascent-v12', 'eqvilent-trading-ops-ascent-v11', 'eqvilent-trading-ops-ascent-v10', 'eqvilent-trading-ops-ascent-v9', 'eqvilent-trading-ops-ascent-v8', 'eqvilent-trading-ops-ascent-v7', 'eqvilent-trading-ops-ascent-v6', 'eqvilent-trading-ops-ascent-v4', 'eqvilent-trading-ops-ascent-v3'];
       const WINDOW_STATE_PREFIX = 'ops-ascent-state:';
       const DAILY_XP_GOAL = 150;
       const persistence = window.opsPersistence || null;
@@ -6195,6 +6195,41 @@
         ['f120','interview','Six-month success question','Ask which controls, incidents, and operating outcomes distinguish an excellent specialist after six months.','This reveals real expectations, decision authority, and the teams reliability culture.']
       ].map(([id, branch, q, a, deep]) => ({ id, branch, q, a, deep }));
 
+      const FLASH_HISTORY_LIMIT = 200;
+      const FLASH_RUBRIC_VERSION = 1;
+      const FLASH_STATUSES = new Set(['all', 'unvalidated', 'validated', 'needs-review', 'strong']);
+
+      function normalizeFlashAttempt(entry, index = 0) {
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+        const cardId = String(entry.cardId || '');
+        if (!flashcards.some(card => card.id === cardId)) return null;
+        const answer = String(entry.answer || '').trim().slice(0, 1200);
+        if (!answer) return null;
+        const bounded = (value, maximum) => Math.max(0, Math.min(maximum, Math.round(Number(value) || 0)));
+        const labels = values => [...new Set((Array.isArray(values) ? values : []).map(value => String(value).trim().slice(0, 80)).filter(Boolean))].slice(0, 8);
+        const coverageScore = bounded(entry.coverageScore, 60);
+        const structureScore = bounded(entry.structureScore, 25);
+        const specificityScore = bounded(entry.specificityScore, 15);
+        const score = coverageScore + structureScore + specificityScore;
+        const verdict = score >= 80 ? 'strong' : score >= 60 ? 'developing' : 'needs-work';
+        return {
+          id: String(entry.id || `flash-attempt-legacy-${index}`).slice(0, 100),
+          cardId,
+          answer,
+          createdAt: String(entry.createdAt || '').slice(0, 64),
+          rubricVersion: FLASH_RUBRIC_VERSION,
+          wordCount: Math.min(500, answer.split(/\s+/).filter(Boolean).length),
+          coverageScore,
+          structureScore,
+          specificityScore,
+          score,
+          verdict,
+          resolved: score >= 75,
+          matched: labels(entry.matched),
+          missing: labels(entry.missing)
+        };
+      }
+
       const quizBank = [
         ['q01','feed','A feed is connected and heartbeats arrive, but sequence and event timestamps stop. Best status?',['Healthy','Transport up; data progression unhealthy','Commercially delayed'],1,'Connectivity does not prove usable market data.'],
         ['q02','market','Best bid 99.90, best ask 100.10. Midpoint?',['99.95','100.00','100.20'],1,'(99.90 + 100.10) / 2 = 100.00.'],
@@ -7236,11 +7271,11 @@
       }
 
       const defaultState = {
-        uiVersion: 21, activeTab: 'home', learnView: 'path', practiceView: 'quiz', simulateView: 'lab', progressView: 'overview',
+        uiVersion: 22, activeTab: 'home', learnView: 'path', practiceView: 'quiz', simulateView: 'lab', progressView: 'overview',
         xp: 0, completed: {}, awards: {}, scenarioScores: {}, drillScores: {}, stageQuizScores: {}, checkpointStage: 'signal',
         cardRatings: {}, streak: 0, lastActive: '', selectedModule: 'feed-state', selectedScenario: 'auction-echo',
         scenarioStep: {}, scenarioStage: {}, scenarioResult: {}, scenarioAnswers: {}, scenarioAftershockAnswers: {}, scenarioAftershockResult: {}, scenarioHistory: [], selectedIncidentRun: '', remediationCycles: [], transferReviews: [], activeTransferReviewId: '', scenarioPlaybackSpeed: 1400, selectedDrill: 'timestamp-path', drillResult: {}, sequenceAnswers: {},
-        flashIndex: 0, flashFilter: 'all', flashRevealed: false, quiz: null, moduleFeedback: {},
+        flashIndex: 0, flashFilter: 'all', flashStatus: 'all', flashRevealed: false, flashDrafts: {}, flashAttempts: [], selectedFlashAttempt: '', quiz: null, moduleFeedback: {},
         pathMode: 'tree', treeZoom: 0.85, treeSearch: '', recentModules: [], nodeNotes: {},
         questionStats: {}, combo: 0, bestCombo: 0, dailyXp: {}, dailyActivity: {},
         bestMockScore: 0, quizHistory: [], selectedPracticeRun: '', quizBranch: 'all', quizDifficulty: 'all', quizLevel: 'all', quizType: 'all', quizCount: 15,
@@ -7325,6 +7360,21 @@
         merged.seenAchievements = merged.seenAchievements && typeof merged.seenAchievements === 'object' ? merged.seenAchievements : {};
         merged.customPlaylists = merged.customPlaylists && typeof merged.customPlaylists === 'object' ? merged.customPlaylists : {};
         merged.claimedShiftRewards = merged.claimedShiftRewards && typeof merged.claimedShiftRewards === 'object' ? merged.claimedShiftRewards : {};
+        const flashCardIds = new Set(flashcards.map(card => card.id));
+        merged.flashFilter = merged.flashFilter === 'all' || branches.some(branch => branch.id === merged.flashFilter) ? merged.flashFilter : 'all';
+        merged.flashStatus = FLASH_STATUSES.has(merged.flashStatus) ? merged.flashStatus : 'all';
+        merged.flashIndex = Math.max(0, Math.floor(Number(merged.flashIndex) || 0));
+        merged.flashRevealed = Boolean(merged.flashRevealed);
+        const flashDraftSource = merged.flashDrafts && typeof merged.flashDrafts === 'object' && !Array.isArray(merged.flashDrafts) ? merged.flashDrafts : {};
+        merged.flashDrafts = Object.fromEntries(Object.entries(flashDraftSource).filter(([cardId, draft]) => flashCardIds.has(cardId) && draft && typeof draft === 'object' && !Array.isArray(draft)).map(([cardId, draft]) => [cardId, {
+          text: String(draft.text || '').slice(0, 1200),
+          updatedAt: String(draft.updatedAt || '').slice(0, 64)
+        }]));
+        merged.flashAttempts = Array.isArray(merged.flashAttempts)
+          ? merged.flashAttempts.map(normalizeFlashAttempt).filter(Boolean).slice(-FLASH_HISTORY_LIMIT)
+          : [];
+        merged.selectedFlashAttempt = String(merged.selectedFlashAttempt || '').slice(0, 100);
+        if (merged.selectedFlashAttempt && !merged.flashAttempts.some(attempt => attempt.id === merged.selectedFlashAttempt)) merged.selectedFlashAttempt = '';
         merged.attemptHistory = Array.isArray(merged.attemptHistory) ? merged.attemptHistory.slice(-500) : [];
         merged.rewardHistory = Array.isArray(merged.rewardHistory) ? merged.rewardHistory.slice(-100) : [];
         merged.quizHistory = Array.isArray(merged.quizHistory)

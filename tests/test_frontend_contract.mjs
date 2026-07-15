@@ -31,8 +31,8 @@ test('quiz state tracks clean, recovered, and eliminated outcomes', () => {
   assert.match(source, /setQuizOutcome\(recovered \? 'recovered' : 'clean'\)/);
   assert.match(source, /setQuizCalibration\(calibration\.outcome\)/);
   assert.match(source, /\(state\.quiz\.score \+ \(state\.quiz\.recovered \|\| 0\) \* 0\.5\)/);
-  assert.match(source, /const STORAGE_KEY = 'eqvilent-trading-ops-ascent-v21'/);
-  assert.match(source, /const LEGACY_STORAGE_KEYS = \['eqvilent-trading-ops-ascent-v20'/);
+  assert.match(source, /const STORAGE_KEY = 'eqvilent-trading-ops-ascent-v22'/);
+  assert.match(source, /const LEGACY_STORAGE_KEYS = \['eqvilent-trading-ops-ascent-v21'/);
 });
 
 test('question mastery requires distinct-day evidence and durable retention', () => {
@@ -85,7 +85,7 @@ test('practice runs retain exact evidence and close into replay and repair', () 
 
 test('adaptive shift plans are bounded, persisted, and evidence-driven', () => {
   assert.match(source, /const TRAINING_PLAN_LIMIT = 30/);
-  assert.match(source, /uiVersion: 21/);
+  assert.match(source, /uiVersion: 22/);
   assert.match(source, /planMinutes: 60, planIntensity: 'balanced', trainingPlans: \[\], activeTrainingPlanId: ''/);
   assert.match(source, /function normalizeTrainingPlan\(entry, index = 0\)/);
   assert.match(source, /function trainingPlanEvidenceValue\(item\)/);
