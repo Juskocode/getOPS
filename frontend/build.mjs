@@ -5,11 +5,11 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 const sourceUrl = new URL('./source.fragment.html', import.meta.url);
 const cssUrl = new URL('./base.css', import.meta.url);
 const persistenceUrl = new URL('./persistence.js', import.meta.url);
-const lucideUrl = new URL('./node_modules/lucide/dist/umd/lucide.min.js', import.meta.url);
-const distUrl = new URL('./dist/', import.meta.url);
-const assetsUrl = new URL('./dist/assets/', import.meta.url);
-const rootOutputUrl = new URL('./index.html', import.meta.url);
-const distOutputUrl = new URL('./dist/index.html', import.meta.url);
+const lucideUrl = new URL('../node_modules/lucide/dist/umd/lucide.min.js', import.meta.url);
+const distUrl = new URL('../dist/', import.meta.url);
+const assetsUrl = new URL('../dist/assets/', import.meta.url);
+const rootOutputUrl = new URL('../index.html', import.meta.url);
+const distOutputUrl = new URL('../dist/index.html', import.meta.url);
 const CACHE_SCHEMA = '2';
 
 const [fragment, baseCss, persistence, lucide] = await Promise.all([
@@ -127,8 +127,8 @@ const outputs = [
   [new URL(jsName, assetsUrl), appJs],
   [distOutputUrl, documentFor(false)],
   [rootOutputUrl, documentFor(true)],
-  [new URL('./dist/service-worker.js', import.meta.url), serviceWorker],
-  [new URL('./dist/asset-manifest.json', import.meta.url), manifest],
+  [new URL('../dist/service-worker.js', import.meta.url), serviceWorker],
+  [new URL('../dist/asset-manifest.json', import.meta.url), manifest],
 ];
 
 for (const [url, content] of outputs) {

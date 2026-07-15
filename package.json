@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs",
+    "build": "node frontend/build.mjs",
     "test": "npm run build && node --test tests/test_frontend_contract.mjs tests/test_build_contract.mjs"
   },
   "dependencies": {

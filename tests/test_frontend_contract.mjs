@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-const sourceUrl = new URL('../source.fragment.html', import.meta.url);
+const sourceUrl = new URL('../frontend/source.fragment.html', import.meta.url);
 const source = await readFile(sourceUrl, 'utf8');
 const scripts = [...source.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
 

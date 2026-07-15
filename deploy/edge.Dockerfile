@@ -3,7 +3,7 @@ FROM node:24-alpine AS builder
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
-COPY build.mjs base.css persistence.js source.fragment.html ./
+COPY frontend ./frontend
 RUN npm run build
 
 FROM nginx:1.28.3-alpine3.23

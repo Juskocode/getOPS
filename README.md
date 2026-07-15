@@ -64,11 +64,11 @@ Recommended first sequence:
 
 ## Source Notes
 
-- `source.fragment.html` is the editable visualization source.
-- `base.css` supplies the local design-system styles.
-- `persistence.js` connects the standalone browser app to the API with timeouts, GET retries, ETag revalidation, and revision-safe writes.
+- `frontend/source.fragment.html` is the editable visualization source.
+- `frontend/base.css` supplies the local design-system styles.
+- `frontend/persistence.js` connects the standalone browser app to the API with timeouts, GET retries, ETag revalidation, and revision-safe writes.
 - `server.py` contains the WSGI origin, local static server, SQLite store, health checks, online backup, validation, WAL mode, and atomic revision-conflict protection.
-- `build.mjs` extracts the fragment into content-addressed CSS and JavaScript, vendors Lucide, precompresses assets, and generates the app-shell service worker.
+- `frontend/build.mjs` extracts the fragment into content-addressed CSS and JavaScript, vendors Lucide, precompresses assets, and generates the app-shell service worker.
 - `dist/` is the production static release. `index.html` remains a direct-open convenience document that references the same generated assets.
 - `deploy/` contains the Gunicorn and Nginx container definitions and edge policy.
 - `docker-compose.yml` runs the restricted edge/origin pair with persistent SQLite storage and bounded logs.
