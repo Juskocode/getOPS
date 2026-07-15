@@ -64,6 +64,8 @@ Recommended first sequence:
 
 ## Source Notes
 
+See [docs/architecture.md](docs/architecture.md) for the repository map, runtime boundaries, and change discipline.
+
 - `frontend/source.fragment.html` is the editable visualization source.
 - `frontend/base.css` supplies the local design-system styles.
 - `frontend/persistence.js` connects the standalone browser app to the API with timeouts, GET retries, ETag revalidation, and revision-safe writes.
