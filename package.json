@@ -1,6 +1,7 @@
 {
-  "name": "trading-ops-ascent",
-  "version": "1.0.0",
+  "name": "getops",
+  "version": "2.0.0",
+  "description": "A persistent HFT trading-operations training workspace with evidence-based practice.",
   "private": true,
   "type": "module",
   "scripts": {

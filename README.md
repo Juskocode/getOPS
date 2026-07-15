@@ -19,7 +19,7 @@ Trading Ops Ascent: an interactive preparation system for quantitative trading a
 - One hundred fifty written-recall flashcards with persistent drafts, deterministic concept/structure/specificity validation, explicit reference reveal, revision history, evidence filters, no-repeat shuffle, bounded XP, profile analytics, and API-validated state. Question review also includes explicit spaced-review stages from same-day recovery through 60-day retention, a prioritized review inbox, pre-answer confidence calibration, an adaptive daily run, and a 12-session campaign.
 - Twenty deep operator guides with mental models, signals, runbooks, common traps, spoken answers, linked drills, and primary references.
 - A simplified five-section workspace: Today, Learn, Practice, Simulate, and Progress, with contextual secondary navigation.
-- A Progress dashboard with rank progression, 52-week activity, domain coverage, recent work, thirty-three achievements, telemetry-triage, interview, and full-shift audit evidence, and an incident replay center with a 12-run trend, per-scenario attempt comparison, five-stage evidence trail, normalized decision/evidence/communication diagnostics, closed-loop repair cycles, and delayed transfer-retention evidence.
+- A Progress dashboard with rank progression, 52-week activity, domain coverage, recent work, evidence-based achievements, telemetry-triage, interview, and full-shift audit evidence, and an incident replay center with a 12-run trend, per-scenario attempt comparison, five-stage evidence trail, normalized decision/evidence/communication diagnostics, closed-loop repair cycles, and delayed transfer-retention evidence.
 - An inspectable 100-point readiness console with ten independently weighted lanes: command path, question-bank evidence, incident pressure, telemetry triage, operational drills, interview transfer, full-shift control, operator guides, recall durability, and sample-confidence-adjusted decision quality. Every lane exposes its evidence and routes directly to corrective practice.
 - Fifteen named ranks, per-answer XP, combo bonuses, daily quests, streaks, score history, node notes, and SQLite persistence.
 - A motion layer with hydration and page skeletons, view-entry transitions, animated level-label glints, multi-shape answer/rank/achievement particles, XP popups, combo celebrations, reward reveals, three tunable Web Audio profiles with volume control, and reduced-motion support.
@@ -67,6 +67,7 @@ Recommended first sequence:
 ## Source Notes
 
 See [docs/architecture.md](docs/architecture.md) for the repository map, runtime boundaries, and change discipline. The written retrieval workflow, rubric, persistence contract, and extension rules live in [docs/typed-recall.md](docs/typed-recall.md).
+Release history is recorded in [CHANGELOG.md](CHANGELOG.md).
 
 - `frontend/source.fragment.html` is the editable visualization source.
 - `frontend/base.css` supplies the local design-system styles.
