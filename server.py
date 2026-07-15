@@ -30,6 +30,10 @@ MAX_STATE_BYTES = 1_800_000
 PROFILE_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,40}$")
 REQUEST_ID_PATTERN = re.compile(r"^[a-zA-Z0-9._:-]{1,80}$")
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+FLASH_CARD_PATTERN = re.compile(r"^f(?:0[1-9]|[1-9][0-9]|1[01][0-9]|120)$")
+FLASH_ATTEMPT_ID_PATTERN = re.compile(r"^[a-zA-Z0-9._:-]{1,100}$")
+FLASH_BRANCHES = {"all", "market", "feed", "orders", "sessions", "monitoring", "incident", "capacity", "risk", "interview"}
+FLASH_STATUSES = {"all", "unvalidated", "validated", "needs-review", "strong"}
 SCHEMA_VERSION = 2
 API_VERSION = "1"
 PRACTICE_RUN_MODES = {
@@ -163,6 +167,7 @@ STATE_OBJECT_FIELDS = {
     "drillScores",
     "stageQuizScores",
     "cardRatings",
+    "flashDrafts",
     "questionStats",
     "questionFavorites",
     "dailyXp",
@@ -729,6 +734,106 @@ def parse_iso_timestamp(value: Any) -> datetime | None:
     return parsed if parsed.tzinfo is not None else None
 
 
+def validate_flash_state(state: dict[str, Any]) -> None:
+    drafts = state.get("flashDrafts", {})
+    if not isinstance(drafts, dict) or len(drafts) > 120:
+        raise ValueError("flashDrafts must be an object containing at most 120 cards")
+    for card_id, draft in drafts.items():
+        if not isinstance(card_id, str) or not FLASH_CARD_PATTERN.fullmatch(card_id):
+            raise ValueError("flashDrafts contains an unknown card ID")
+        if not isinstance(draft, dict):
+            raise ValueError(f"flashDrafts.{card_id} must be an object")
+        text = draft.get("text", "")
+        if not isinstance(text, str) or len(text) > 1200:
+            raise ValueError(f"flashDrafts.{card_id}.text must be a string of at most 1200 characters")
+        updated_at = draft.get("updatedAt", "")
+        if updated_at and parse_iso_timestamp(updated_at) is None:
+            raise ValueError(f"flashDrafts.{card_id}.updatedAt must be empty or a timezone-aware timestamp")
+
+    attempts = state.get("flashAttempts", [])
+    if not isinstance(attempts, list) or len(attempts) > 200:
+        raise ValueError("flashAttempts must be an array containing at most 200 entries")
+    attempt_ids: set[str] = set()
+    for index, attempt in enumerate(attempts):
+        field = f"flashAttempts[{index}]"
+        if not isinstance(attempt, dict):
+            raise ValueError(f"{field} must be an object")
+        attempt_id = attempt.get("id")
+        if not isinstance(attempt_id, str) or not FLASH_ATTEMPT_ID_PATTERN.fullmatch(attempt_id):
+            raise ValueError(f"{field}.id is invalid")
+        if attempt_id in attempt_ids:
+            raise ValueError("flashAttempts IDs must be unique")
+        attempt_ids.add(attempt_id)
+        card_id = attempt.get("cardId")
+        if not isinstance(card_id, str) or not FLASH_CARD_PATTERN.fullmatch(card_id):
+            raise ValueError(f"{field}.cardId is invalid")
+        answer = attempt.get("answer")
+        if not isinstance(answer, str) or answer != answer.strip() or not 20 <= len(answer) <= 1200:
+            raise ValueError(f"{field}.answer must be trimmed and contain 20 to 1200 characters")
+        expected_words = len(answer.split())
+        word_count = attempt.get("wordCount")
+        if isinstance(word_count, bool) or not isinstance(word_count, int) or word_count != expected_words or not 4 <= word_count <= 500:
+            raise ValueError(f"{field}.wordCount must match an answer containing 4 to 500 words")
+        if parse_iso_timestamp(attempt.get("createdAt")) is None:
+            raise ValueError(f"{field}.createdAt must be a timezone-aware timestamp")
+        rubric_version = attempt.get("rubricVersion")
+        if isinstance(rubric_version, bool) or rubric_version != 1:
+            raise ValueError(f"{field}.rubricVersion must be 1")
+        component_limits = {"coverageScore": 60, "structureScore": 25, "specificityScore": 15}
+        component_total = 0
+        for name, maximum in component_limits.items():
+            value = attempt.get(name)
+            if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= maximum:
+                raise ValueError(f"{field}.{name} must be an integer between 0 and {maximum}")
+            component_total += value
+        score = attempt.get("score")
+        if isinstance(score, bool) or not isinstance(score, int) or score != component_total:
+            raise ValueError(f"{field}.score must equal its rubric component total")
+        expected_verdict = "strong" if score >= 80 else "developing" if score >= 60 else "needs-work"
+        if attempt.get("verdict") != expected_verdict:
+            raise ValueError(f"{field}.verdict must match its score")
+        resolved = attempt.get("resolved")
+        if not isinstance(resolved, bool) or resolved != (score >= 75):
+            raise ValueError(f"{field}.resolved must match the 75 percent gate")
+        label_sets: dict[str, set[str]] = {}
+        for name in ("matched", "missing"):
+            labels = attempt.get(name, [])
+            if not isinstance(labels, list) or len(labels) > 8:
+                raise ValueError(f"{field}.{name} must be an array of at most 8 labels")
+            if any(not isinstance(label, str) or not label or len(label) > 80 for label in labels):
+                raise ValueError(f"{field}.{name} must contain non-empty labels of at most 80 characters")
+            if len(set(labels)) != len(labels):
+                raise ValueError(f"{field}.{name} labels must be unique")
+            label_sets[name] = set(labels)
+        if label_sets["matched"] & label_sets["missing"]:
+            raise ValueError(f"{field} may not mark the same concept as matched and missing")
+
+    selected_attempt = state.get("selectedFlashAttempt", "")
+    if not isinstance(selected_attempt, str) or len(selected_attempt) > 100:
+        raise ValueError("selectedFlashAttempt must be a string of at most 100 characters")
+    if selected_attempt and selected_attempt not in attempt_ids:
+        raise ValueError("selectedFlashAttempt must reference a saved flash attempt")
+    if state.get("flashFilter", "all") not in FLASH_BRANCHES:
+        raise ValueError("flashFilter is invalid")
+    if state.get("flashStatus", "all") not in FLASH_STATUSES:
+        raise ValueError("flashStatus is invalid")
+    active_id = state.get("flashActiveId", "")
+    if not isinstance(active_id, str) or (active_id and not FLASH_CARD_PATTERN.fullmatch(active_id)):
+        raise ValueError("flashActiveId is invalid")
+    recent = state.get("flashRecent", [])
+    if not isinstance(recent, list) or len(recent) > 6:
+        raise ValueError("flashRecent must be an array of at most 6 card IDs")
+    if any(not isinstance(card_id, str) or not FLASH_CARD_PATTERN.fullmatch(card_id) for card_id in recent):
+        raise ValueError("flashRecent contains an invalid card ID")
+    if len(set(recent)) != len(recent):
+        raise ValueError("flashRecent must contain unique card IDs")
+    flash_index = state.get("flashIndex", 0)
+    if isinstance(flash_index, bool) or not isinstance(flash_index, int) or not 0 <= flash_index <= 100_000:
+        raise ValueError("flashIndex must be an integer between 0 and 100000")
+    if not isinstance(state.get("flashRevealed", False), bool):
+        raise ValueError("flashRevealed must be a boolean")
+
+
 def validate_triage_answers(answer: Any, template_id: str, field_name: str, *, complete: bool) -> None:
     if not isinstance(answer, dict):
         raise ValueError(f"{field_name} must be an object")
@@ -1253,6 +1358,7 @@ def serialize_state(state: dict[str, Any]) -> str:
     for name in STATE_OBJECT_FIELDS:
         if name in state and not isinstance(state[name], dict):
             raise ValueError(f"{name} must be an object")
+    validate_flash_state(state)
     validate_question_stats(state)
     for name in ("quizHistory", "attemptHistory", "rewardHistory", "scenarioHistory", "remediationCycles", "transferReviews", "triageHistory", "shiftHistory", "coachHistory", "trainingPlans"):
         if name in state and not isinstance(state[name], list):
