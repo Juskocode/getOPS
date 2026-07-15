@@ -1509,6 +1509,29 @@
       border-top: 1px solid var(--border);
     }
 
+    #ops-ascent-v1 .ops-flash-review > * {
+      animation: ops-flash-evidence-in 300ms cubic-bezier(.2, .75, .25, 1) both;
+    }
+
+    #ops-ascent-v1 .ops-flash-review > :nth-child(2) { animation-delay: 55ms; }
+    #ops-ascent-v1 .ops-flash-review > :nth-child(3) { animation-delay: 110ms; }
+    #ops-ascent-v1 .ops-flash-review > :nth-child(4) { animation-delay: 165ms; }
+
+    #ops-ascent-v1 .ops-flash-review .ops-status-label[data-status="mastered"] {
+      animation: ops-flash-lock 620ms ease-out both;
+    }
+
+    @keyframes ops-flash-evidence-in {
+      from { opacity: 0; transform: translateY(7px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes ops-flash-lock {
+      0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--viz-series-3) 45%, transparent); }
+      55% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--viz-series-3) 10%, transparent); }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+
     #ops-ascent-v1 .ops-flash-score-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3663,6 +3686,11 @@
       #ops-ascent-v1 .ops-transfer-loop [data-step-state="current"],
       #ops-ascent-v1 .ops-retention-mini-track [data-step-state="current"],
       #ops-ascent-v1 .ops-retention-ladder [data-step-state="current"] {
+        animation: none;
+      }
+
+      #ops-ascent-v1 .ops-flash-review > *,
+      #ops-ascent-v1 .ops-flash-review .ops-status-label[data-status="mastered"] {
         animation: none;
       }
     }
@@ -8783,6 +8811,15 @@
         return { attempts: state.flashAttempts.length, validated: latest.length, strong, needsReview, average, revisions: Math.max(0, state.flashAttempts.length - latest.length), branchRows };
       }
 
+      function flashImprovementCount(minimum = 20) {
+        const byCard = new Map();
+        state.flashAttempts.forEach(attempt => {
+          if (!byCard.has(attempt.cardId)) byCard.set(attempt.cardId, []);
+          byCard.get(attempt.cardId).push(attempt.score);
+        });
+        return [...byCard.values()].filter(scores => scores.some((score, index) => scores.slice(0, index).some(prior => score - prior >= minimum))).length;
+      }
+
       function readinessBreakdown() {
         const mastery = questionMasterySummary();
         const scenarioTotal = scenarios.reduce((sum, scenario) => sum + scenarioCompositeScore(scenario.id), 0);
@@ -8926,8 +8963,15 @@
         const coachPasses = state.coachHistory.filter(run => run.passed);
         const triagePasses = state.triageHistory.filter(run => run.passed);
         const triageCoverage = new Set(triagePasses.map(run => run.templateId)).size;
+        const recallEvidence = flashEvidenceSummary();
+        const recallFoundationIds = new Set(flashcards.filter(card => ['market', 'feed'].includes(card.branch)).map(card => card.id));
+        const recallFoundationStrong = state.flashAttempts.filter(attempt => recallFoundationIds.has(attempt.cardId) && attempt.score >= 80);
         return [
           { id: 'first-signal', name: 'First Signal', detail: 'Master one bank question', icon: 'radio', unlocked: questionMasteredCount() >= 1 },
+          { id: 'written-signal', name: 'Written Signal', detail: 'Validate one typed recall from memory', icon: 'scan-text', unlocked: recallEvidence.validated >= 1 },
+          { id: 'recall-repair', name: 'Recall Reforged', detail: 'Improve one written answer by 20 points', icon: 'anvil', unlocked: flashImprovementCount() >= 1 },
+          { id: 'recall-vault', name: 'Recall Vault', detail: 'Lock 25 flashcards at 80% or above', icon: 'archive-restore', unlocked: recallEvidence.strong >= 25 },
+          { id: 'signal-foundation', name: 'Signal Foundation', detail: 'Lock every market and feed card at 80% or above', icon: 'radio-tower', unlocked: new Set(recallFoundationStrong.map(attempt => attempt.cardId)).size >= recallFoundationIds.size },
           { id: 'flow-state', name: 'Flow State', detail: 'Reach a 5-answer combo', icon: 'waves', unlocked: (state.bestCombo || 0) >= 5 },
           { id: 'combo-operator', name: 'Combo Operator', detail: 'Reach a 10-answer combo', icon: 'link', unlocked: (state.bestCombo || 0) >= 10 },
           { id: 'hot-path', name: 'Hot Path', detail: 'Reach a 20-answer combo', icon: 'flame', unlocked: (state.bestCombo || 0) >= 20 },

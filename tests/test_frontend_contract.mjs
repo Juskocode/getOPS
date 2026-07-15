@@ -429,3 +429,13 @@ test('today surfaces a written recall evidence pulse', () => {
   assert.match(source, /todayAttempts/);
   assert.match(source, /renderFlashRecallPulse\(\)/);
 });
+
+test('typed recall progression unlocks evidence-based achievements', () => {
+  assert.match(source, /function flashImprovementCount\(minimum = 20\)/);
+  assert.match(source, /id: 'written-signal'/);
+  assert.match(source, /id: 'recall-repair'/);
+  assert.match(source, /id: 'recall-vault'/);
+  assert.match(source, /id: 'signal-foundation'/);
+  assert.match(source, /@keyframes ops-flash-evidence-in/);
+  assert.match(source, /prefers-reduced-motion: reduce[\s\S]*?\.ops-flash-review/);
+});
