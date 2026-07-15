@@ -393,3 +393,11 @@ test('flashcard navigation waits for explicit next and avoids weak repeats', () 
   const validator = source.slice(source.indexOf('function validateFlashDraft()'), source.indexOf('function answerQuestion('));
   assert.doesNotMatch(validator, /advanceFlashCard\(/);
 });
+
+test('typed recall rewards are bounded and share the manual grade award key', () => {
+  assert.match(source, /const recallXp = attempt\.score >= 80 \? 10 : attempt\.score >= 60 \? 5 : 0/);
+  assert.match(source, /award\('flash:' \+ current\.card\.id \+ ':' \+ todayKey\(\), recallXp/);
+  assert.match(source, /award\('flash:' \+ card\.id \+ ':' \+ todayKey\(\), points/);
+  assert.match(source, /state\.cardRatings\[current\.card\.id\] = attempt\.score >= 80 \? 'good'/);
+  assert.match(source, /strengthen before XP/);
+});

@@ -12300,9 +12300,12 @@
         state.flashAttempts = [...state.flashAttempts, attempt].slice(-FLASH_HISTORY_LIMIT);
         state.flashActiveId = current.card.id;
         state.selectedFlashAttempt = attempt.id;
+        state.cardRatings[current.card.id] = attempt.score >= 80 ? 'good' : attempt.score >= 60 ? 'hard' : 'again';
         recordActivity('actions');
+        const recallXp = attempt.score >= 80 ? 10 : attempt.score >= 60 ? 5 : 0;
+        const xpAwarded = recallXp > 0 && award('flash:' + current.card.id + ':' + todayKey(), recallXp, current.card.q + ' typed recall');
         playSound(attempt.resolved ? 'success' : 'error');
-        notice(`${attempt.score}% recall evidence | ${attempt.verdict.replace('-', ' ')}`);
+        notice(`${attempt.score}% recall evidence | ${attempt.verdict.replace('-', ' ')}${recallXp ? xpAwarded ? ` | +${recallXp} XP` : ' | daily XP already banked' : ' | strengthen before XP'}`);
         render(true);
         requestAnimationFrame(() => particleBurst(root.querySelector('.ops-flash-score-grid'), attempt.resolved ? 'success' : 'hard', attempt.score >= 80 ? 18 : 10));
       }
