@@ -256,6 +256,78 @@ class ProgressStoreTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "correct and wrong counts may not exceed attempts"):
             self.store.save("mastery-invalid-counts", forged_counts)
 
+    def test_flashcard_evidence_validation_and_round_trip(self):
+        attempt = {
+            "id": "flash-attempt-f10-proof-1",
+            "cardId": "f10",
+            "answer": "Delayed data progresses intentionally while stale data stops unexpectedly.",
+            "createdAt": "2026-07-15T17:00:00.000Z",
+            "rubricVersion": 1,
+            "wordCount": 9,
+            "coverageScore": 45,
+            "structureScore": 20,
+            "specificityScore": 10,
+            "score": 75,
+            "verdict": "developing",
+            "resolved": True,
+            "matched": ["Delay is intentional", "Delayed data still progresses"],
+            "missing": ["Staleness is unexpected"],
+        }
+        valid = {
+            "uiVersion": 22,
+            "xp": 42,
+            "flashDrafts": {
+                "f10": {
+                    "text": attempt["answer"],
+                    "updatedAt": "2026-07-15T17:00:01.000Z",
+                }
+            },
+            "flashAttempts": [attempt],
+            "selectedFlashAttempt": attempt["id"],
+            "flashFilter": "feed",
+            "flashStatus": "needs-review",
+            "flashActiveId": "f10",
+            "flashRecent": ["f07", "f08"],
+            "flashIndex": 3,
+            "flashRevealed": False,
+        }
+        saved = self.store.save("flash-valid", valid)
+        self.assertEqual(saved["state"]["flashAttempts"][0]["score"], 75)
+        self.assertEqual(saved["state"]["selectedFlashAttempt"], attempt["id"])
+
+        mutations = [
+            ("score", lambda state: state["flashAttempts"][0].__setitem__("score", 76), "score must equal its rubric component total"),
+            ("verdict", lambda state: state["flashAttempts"][0].__setitem__("verdict", "strong"), "verdict must match its score"),
+            ("resolved", lambda state: state["flashAttempts"][0].__setitem__("resolved", False), "resolved must match the 75 percent gate"),
+            ("word-count", lambda state: state["flashAttempts"][0].__setitem__("wordCount", 8), "wordCount must match"),
+            ("timestamp", lambda state: state["flashAttempts"][0].__setitem__("createdAt", "2026-07-15 17:00:00"), "createdAt must be a timezone-aware timestamp"),
+            ("selection", lambda state: state.__setitem__("selectedFlashAttempt", "missing-attempt"), "must reference a saved flash attempt"),
+            ("overlap", lambda state: state["flashAttempts"][0]["missing"].append("Delay is intentional"), "may not mark the same concept"),
+            ("draft-time", lambda state: state["flashDrafts"]["f10"].__setitem__("updatedAt", "yesterday"), "updatedAt must be empty or a timezone-aware timestamp"),
+            ("status", lambda state: state.__setitem__("flashStatus", "perfect"), "flashStatus is invalid"),
+            ("recent", lambda state: state.__setitem__("flashRecent", ["f07", "f07"]), "flashRecent must contain unique card IDs"),
+        ]
+        for index, (name, mutate, message) in enumerate(mutations):
+            forged = json.loads(json.dumps(valid))
+            mutate(forged)
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(ValueError, message):
+                    self.store.save(f"flash-invalid-{index}", forged)
+
+        duplicate = json.loads(json.dumps(valid))
+        duplicate["flashAttempts"].append(json.loads(json.dumps(attempt)))
+        with self.assertRaisesRegex(ValueError, "flashAttempts IDs must be unique"):
+            self.store.save("flash-invalid-duplicate", duplicate)
+
+        oversized = json.loads(json.dumps(valid))
+        oversized["flashAttempts"] = [
+            {**attempt, "id": f"flash-attempt-{index}"}
+            for index in range(201)
+        ]
+        oversized["selectedFlashAttempt"] = ""
+        with self.assertRaisesRegex(ValueError, "at most 200 entries"):
+            self.store.save("flash-invalid-limit", oversized)
+
     def test_practice_run_audit_validation_and_lineage(self):
         source_run = {
             "id": "practice-adaptive-source",
