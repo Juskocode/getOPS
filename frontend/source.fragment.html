@@ -9200,6 +9200,20 @@
         return `<section class="ops-home-section ops-practice-pulse"><div class="ops-section-head"><div><h3>Latest practice evidence</h3><div class="text-small text-muted">${esc(meta.name)} | ${esc(practiceRunDuration(run))}</div></div><span class="ops-status-label" data-status="${status}">${run.score}%</span></div><div class="ops-practice-pulse-metrics"><span><strong>${run.clean}</strong><small>clean</small></span><span><strong>${run.recovered}</strong><small>recovered</small></span><span><strong>${repairCount}</strong><small>repair</small></span></div><div class="ops-card-actions"><button type="button" class="btn" data-action="practice-run-open" data-id="${esc(run.id)}"><i data-lucide="file-clock" aria-hidden="true"></i>Inspect run</button>${repairCount ? `<button type="button" class="btn btn-primary" data-action="practice-run-repair" data-id="${esc(run.id)}"><i data-lucide="scan-search" aria-hidden="true"></i>Repair ${repairCount}</button>` : ''}</div></section>`;
       }
 
+      function flashAttemptDay(attempt) {
+        const date = new Date(attempt?.createdAt || '');
+        if (Number.isNaN(date.getTime())) return '';
+        return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+      }
+
+      function renderFlashRecallPulse() {
+        const summary = flashEvidenceSummary();
+        const todayAttempts = state.flashAttempts.filter(attempt => flashAttemptDay(attempt) === todayKey()).length;
+        const weakest = [...summary.branchRows].sort((a, b) => (a.strong / Math.max(1, a.total)) - (b.strong / Math.max(1, b.total)) || a.average - b.average)[0];
+        const status = summary.needsReview ? 'due' : summary.strong ? 'mastered' : 'learning';
+        return `<section class="ops-home-section ops-practice-pulse"><div class="ops-section-head"><div><h3>Written recall</h3><div class="text-small text-muted">${summary.validated ? 'Weakest branch: ' + esc(weakest?.name || 'unscored') : 'Create interview-ready evidence from memory'}</div></div><span class="ops-status-label" data-status="${status}">${summary.needsReview ? summary.needsReview + ' REPAIR' : summary.strong ? summary.strong + ' STRONG' : 'READY'}</span></div><div class="ops-practice-pulse-metrics"><span><strong>${summary.validated}</strong><small>validated</small></span><span><strong>${summary.average}%</strong><small>average</small></span><span><strong>${todayAttempts}</strong><small>today</small></span></div><button type="button" class="btn ${summary.needsReview || !summary.validated ? 'btn-primary' : ''}" data-action="open-flash-review"><i data-lucide="scan-text" aria-hidden="true"></i>${summary.needsReview ? 'Repair weak recall' : summary.validated ? 'Continue recall' : 'Write first recall'}</button></section>`;
+      }
+
       const trainingPlanIntensityMeta = {
         focused: { label: 'Focused', icon: 'scan-line', detail: 'Foundations and recall before pressure.' },
         balanced: { label: 'Balanced', icon: 'scale', detail: 'Knowledge, execution, and one pressure proof.' },
@@ -9496,6 +9510,7 @@
               ${renderShiftPulse()}
               ${renderCoachPulse()}
               ${renderTransferRetentionPulse()}
+              ${renderFlashRecallPulse()}
               ${renderPracticeEvidencePulse()}
               <section class="ops-home-section"><div class="ops-section-head"><h3>Review queue</h3><span class="viz-badge">${due} DUE</span></div><p class="text-small text-muted">Mistakes and spaced reviews are prioritized before already-stable questions.</p><button type="button" class="btn ${due ? 'btn-primary' : ''}" data-action="quiz-start" data-mode="review"><i data-lucide="rotate-ccw" aria-hidden="true"></i>${due ? 'Clear due reviews' : 'Run maintenance review'}</button></section>
               <section class="ops-home-section"><div class="ops-section-head"><h3>Weakest branch</h3><span class="viz-badge">${esc(weak.name.toUpperCase())}</span></div><div class="ops-breakdown-row"><span>Path</span><div class="ops-mini-progress"><span style="width:${branchProgress(weak)}%;background:var(--viz-series-${weak.color})"></span></div><span class="text-small">${branchProgress(weak)}%</span></div><button type="button" class="btn" data-action="start-drill" data-id="${weakDrill.id}"><i data-lucide="wrench" aria-hidden="true"></i>${esc(weakDrill.name)}</button></section>

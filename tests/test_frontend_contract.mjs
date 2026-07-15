@@ -421,3 +421,11 @@ test('typed recall evidence contributes to profile and readiness', () => {
   assert.match(source, /flashEvidence\.strong \/ flashcards\.length/);
   assert.match(source, /renderFlashEvidenceCenter\(\)/);
 });
+
+test('today surfaces a written recall evidence pulse', () => {
+  assert.match(source, /function flashAttemptDay\(attempt\)/);
+  assert.match(source, /function renderFlashRecallPulse\(\)/);
+  assert.match(source, /Weakest branch:/);
+  assert.match(source, /todayAttempts/);
+  assert.match(source, /renderFlashRecallPulse\(\)/);
+});
