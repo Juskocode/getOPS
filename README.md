@@ -14,7 +14,7 @@ Trading Ops Ascent: an interactive preparation system for quantitative trading a
 - A 500-question bank with four or five plausible choices per question, five animated levels from Tutorial through HFT, format labels and filtering, multi-attempt elimination without early answer leakage, clean-versus-recovered scoring, selected-choice analysis, every-option explanations, evidence packs, runbooks, spoken answers, 54 operational diagrams, filter-aware random selection, bookmarks, scored queues, and custom playlists.
 - A five-point question-evidence model that separates unseen, repair, learning, mastered, and durable states. Clean proof can advance only once per calendar day, mastery requires three evidence points, durable proof requires five points plus two delayed retention passes, and same-day replay cannot farm evidence, XP, or review-stage distance.
 - An auditable Practice Ledger that keeps up to 100 completed runs with stable IDs, exact question order, per-question outcome and calibration, selection reason, duration, XP, branch, and evidence movement. Any run can be replayed in its original order, while repair launches only unresolved or overconfident decisions and links the follow-up back to its source. Score-only legacy runs remain visible without pretending that their missing question identity can be reconstructed.
-- One hundred twenty flashcards, explicit spaced-review stages from same-day recovery through 60-day retention, a prioritized review inbox, pre-answer confidence calibration, retention grading, an adaptive daily run, and a 12-session campaign.
+- One hundred fifty written-recall flashcards with persistent drafts, deterministic concept/structure/specificity validation, explicit reference reveal, revision history, evidence filters, no-repeat shuffle, bounded XP, profile analytics, and API-validated state. Question review also includes explicit spaced-review stages from same-day recovery through 60-day retention, a prioritized review inbox, pre-answer confidence calibration, an adaptive daily run, and a 12-session campaign.
 - Twenty deep operator guides with mental models, signals, runbooks, common traps, spoken answers, linked drills, and primary references.
 - A simplified five-section workspace: Today, Learn, Practice, Simulate, and Progress, with contextual secondary navigation.
 - A Progress dashboard with rank progression, 52-week activity, domain coverage, recent work, thirty-three achievements, telemetry-triage, interview, and full-shift audit evidence, and an incident replay center with a 12-run trend, per-scenario attempt comparison, five-stage evidence trail, normalized decision/evidence/communication diagnostics, closed-loop repair cycles, and delayed transfer-retention evidence.
@@ -64,7 +64,7 @@ Recommended first sequence:
 
 ## Source Notes
 
-See [docs/architecture.md](docs/architecture.md) for the repository map, runtime boundaries, and change discipline.
+See [docs/architecture.md](docs/architecture.md) for the repository map, runtime boundaries, and change discipline. The written retrieval workflow, rubric, persistence contract, and extension rules live in [docs/typed-recall.md](docs/typed-recall.md).
 
 - `frontend/source.fragment.html` is the editable visualization source.
 - `frontend/base.css` supplies the local design-system styles.

@@ -26,6 +26,8 @@ flowchart LR
 
 The browser owns curriculum presentation and deterministic exercise scoring. The origin validates bounded state shape, lineage, timestamps, score invariants, and revision ownership before persistence. Runtime database files, backups, generated assets, local environment values, and dependency caches must remain outside Git.
 
+The typed recall subsystem is documented separately in [typed-recall.md](typed-recall.md), including scoring limits, merge rules, anti-farming behavior, and the extension checklist.
+
 ## Stable entry points
 
 - `npm run build` produces `dist/` and the direct-open root document.
