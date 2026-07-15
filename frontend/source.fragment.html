@@ -8042,6 +8042,26 @@
           const a = remote.cardRatings?.[key]; const b = local.cardRatings?.[key];
           merged.cardRatings[key] = (ratingRank[b] || 0) >= (ratingRank[a] || 0) ? b : a;
         });
+        merged.flashDrafts = {};
+        new Set([...Object.keys(remote.flashDrafts || {}), ...Object.keys(local.flashDrafts || {})]).forEach(cardId => {
+          const remoteDraft = remote.flashDrafts?.[cardId];
+          const localDraft = local.flashDrafts?.[cardId];
+          if (!remoteDraft) merged.flashDrafts[cardId] = localDraft;
+          else if (!localDraft) merged.flashDrafts[cardId] = remoteDraft;
+          else merged.flashDrafts[cardId] = String(localDraft.updatedAt || '') >= String(remoteDraft.updatedAt || '') ? localDraft : remoteDraft;
+        });
+        const flashAttemptMap = new Map();
+        [...(remote.flashAttempts || []), ...(local.flashAttempts || [])].forEach(rawAttempt => {
+          const attempt = normalizeFlashAttempt(rawAttempt);
+          if (!attempt) return;
+          const existing = flashAttemptMap.get(attempt.id);
+          if (!existing || String(attempt.createdAt || '') >= String(existing.createdAt || '')) flashAttemptMap.set(attempt.id, attempt);
+        });
+        merged.flashAttempts = [...flashAttemptMap.values()]
+          .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')) || a.id.localeCompare(b.id))
+          .slice(-FLASH_HISTORY_LIMIT);
+        const requestedFlashAttempt = local.selectedFlashAttempt || remote.selectedFlashAttempt || '';
+        merged.selectedFlashAttempt = merged.flashAttempts.some(attempt => attempt.id === requestedFlashAttempt) ? requestedFlashAttempt : '';
         merged.questionStats = {};
         new Set([...Object.keys(remote.questionStats || {}), ...Object.keys(local.questionStats || {})]).forEach(id => {
           const a = remote.questionStats[id] || {};

@@ -363,3 +363,12 @@ test('flashcard revisions retain an inspectable evidence history', () => {
   assert.match(source, /state\.selectedFlashAttempt = attempt\.id/);
   assert.match(source, /Attempt history/);
 });
+
+test('flashcard evidence merges safely across revisions and browser tabs', () => {
+  assert.match(source, /merged\.flashDrafts = \{\}/);
+  assert.match(source, /localDraft\.updatedAt \|\| ''\) >= String\(remoteDraft\.updatedAt \|\| ''\)/);
+  assert.match(source, /const flashAttemptMap = new Map\(\)/);
+  assert.match(source, /flashAttemptMap\.set\(attempt\.id, attempt\)/);
+  assert.match(source, /\.slice\(-FLASH_HISTORY_LIMIT\)/);
+  assert.match(source, /merged\.selectedFlashAttempt = merged\.flashAttempts\.some/);
+});
