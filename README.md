@@ -1,5 +1,7 @@
 # getOPS
 
+[![Verify](https://github.com/Juskocode/getOPS/actions/workflows/verify.yml/badge.svg)](https://github.com/Juskocode/getOPS/actions/workflows/verify.yml)
+
 Trading Ops Ascent: an interactive preparation system for quantitative trading and HFT operations roles.
 
 ## Included
