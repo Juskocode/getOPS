@@ -334,3 +334,14 @@ test('calibration queue and misconception analytics stay actionable', () => {
   assert.match(source, /data-action="practice-misconception"/);
   assert.match(source, /High-confidence miss targeted/);
 });
+
+test('flashcard recall uses a transparent deterministic rubric', () => {
+  assert.match(source, /const FLASH_RUBRIC_VERSION = 1/);
+  assert.match(source, /const FLASH_RUBRIC_OVERRIDES = \{/);
+  assert.match(source, /function fallbackFlashRubric\(card\)/);
+  assert.match(source, /function evaluateFlashResponse\(card, answer, id = ''\)/);
+  assert.match(source, /coverageScore = rules\.length \? Math\.round\(60 \* matched\.length \/ rules\.length\) : 0/);
+  assert.match(source, /const structureScore = Math\.min\(25,/);
+  assert.match(source, /const specificityScore = Math\.min\(15,/);
+  assert.match(source, /return normalizeFlashAttempt\(\{/);
+});

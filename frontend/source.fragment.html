@@ -6250,6 +6250,216 @@
         };
       }
 
+      const FLASH_RECALL_STOP_WORDS = new Set([
+        'about', 'after', 'again', 'also', 'always', 'and', 'because', 'before', 'being', 'between', 'both', 'can', 'could', 'does', 'each', 'from', 'have', 'into', 'more', 'must', 'normally', 'only', 'other', 'should', 'than', 'that', 'their', 'then', 'there', 'these', 'they', 'this', 'through', 'under', 'used', 'using', 'when', 'where', 'which', 'while', 'with', 'would'
+      ]);
+
+      const FLASH_BRANCH_TERMS = {
+        market: ['bid', 'ask', 'spread', 'midpoint', 'price', 'size', 'liquidity', 'book', 'trade', 'quote', 'auction'],
+        feed: ['sequence', 'snapshot', 'incremental', 'timestamp', 'freshness', 'stale', 'channel', 'consumer', 'publish', 'receive', 'recovery'],
+        orders: ['order', 'acknowledgment', 'fill', 'cancel', 'reject', 'position', 'identifier', 'venue', 'lifecycle', 'execution'],
+        sessions: ['session', 'phase', 'calendar', 'auction', 'halt', 'open', 'close', 'control', 'readiness', 'handoff'],
+        monitoring: ['rate', 'count', 'latency', 'queue', 'baseline', 'threshold', 'metric', 'population', 'alert', 'tail'],
+        incident: ['scope', 'impact', 'risk', 'control', 'owner', 'evidence', 'escalate', 'containment', 'recovery', 'timestamp'],
+        capacity: ['arrival', 'service', 'throughput', 'queue', 'backlog', 'headroom', 'peak', 'replay', 'failover', 'latency'],
+        risk: ['position', 'limit', 'control', 'kill', 'audit', 'record', 'approval', 'reconcile', 'MiFID', 'trading'],
+        interview: ['decision', 'evidence', 'example', 'impact', 'production', 'market-data', 'incident', 'capacity', 'scope', 'confidentiality']
+      };
+
+      const FLASH_RUBRIC_OVERRIDES = {
+        f01: [
+          ['Quote is available interest', [['quote', 'interest'], ['bid', 'ask', 'price', 'size']]],
+          ['Trade is a completed execution', [['trade', 'execution'], ['transaction', 'price', 'quantity']]],
+          ['Interest and execution are distinct', [['quote', 'trade', 'different'], ['quote', 'change', 'without', 'trade']]]
+        ],
+        f03: [
+          ['L1 is top of book', [['l1', 'best', 'bid', 'ask'], ['l1', 'top', 'book']]],
+          ['L2 adds depth', [['l2', 'multiple', 'level'], ['l2', 'depth']]],
+          ['Provider semantics can vary', [['provider', 'definition', 'vary'], ['aggregated', 'order-by-order']]]
+        ],
+        f07: [
+          ['Snapshot supplies current state', [['snapshot', 'current', 'state'], ['snapshot', 'complete', 'state']]],
+          ['Incremental supplies a change', [['incremental', 'change'], ['incremental', 'prior', 'state']]],
+          ['Continuity is required', [['sequence', 'continuity'], ['valid', 'starting', 'state']]],
+          ['Recovery joins snapshot and increments', [['recovery', 'snapshot', 'incremental'], ['buffered', 'incremental']]]
+        ],
+        f08: [
+          ['Sequence establishes ordering', [['sequence', 'order'], ['sequence', 'progression']]],
+          ['It exposes continuity failures', [['gap', 'duplicate'], ['missing', 'event']]],
+          ['Its domain must be scoped', [['channel', 'partition'], ['sequence', 'domain']]]
+        ],
+        f10: [
+          ['Delay is intentional', [['delayed', 'intentional'], ['known', 'offset']]],
+          ['Delayed data still progresses', [['delayed', 'progress'], ['message', 'continue']]],
+          ['Staleness is unexpected', [['stale', 'unexpected'], ['stale', 'stop']]],
+          ['Trust depends on age and context', [['timestamp', 'session'], ['old', 'trust']]]
+        ],
+        f11: [
+          ['Quiet prices can be healthy', [['quiet', 'instrument'], ['unchanged', 'price', 'healthy']]],
+          ['Progression needs independent evidence', [['sequence', 'heartbeat'], ['event', 'receive', 'timestamp']]],
+          ['Session and peers provide context', [['session', 'related', 'instrument'], ['peer', 'feed']]]
+        ],
+        f12: [
+          ['Exchange time marks the source event', [['exchange', 'event', 'time'], ['venue', 'timestamp']]],
+          ['Receive time marks local arrival', [['receive', 'arrival'], ['local', 'receive']]],
+          ['Publish time marks distribution', [['publish', 'distribution'], ['internal', 'publish']]],
+          ['Differences localize latency', [['compare', 'timestamp'], ['latency', 'localize']]]
+        ],
+        f14: [
+          ['Transport health is not data health', [['socket', 'not', 'healthy'], ['connected', 'no', 'progress']]],
+          ['Progression and freshness must be checked', [['message', 'progression'], ['consumer', 'freshness']]],
+          ['Blocked queues or subscriptions can isolate failure', [['queue', 'subscription'], ['decoder', 'publisher']]]
+        ],
+        f15: [
+          ['Authoritative state is rebuilt', [['authoritative', 'state', 'rebuilt'], ['snapshot', 'rebuild']]],
+          ['Sequence and freshness are valid', [['sequence', 'freshness'], ['continuity', 'valid']]],
+          ['Consumers catch up', [['consumer', 'caught', 'up'], ['downstream', 'fresh']]],
+          ['Trading controls are restored deliberately', [['trading', 'control', 'restore'], ['verify', 'before', 'resume']]]
+        ],
+        f23: [
+          ['Scope the reject rate and reason', [['reject', 'reason', 'rate'], ['reject', 'baseline']]],
+          ['Check concentration and system state', [['strategy', 'symbol', 'session'], ['limit', 'queue']]],
+          ['Stop retry amplification', [['retry', 'loop'], ['retry', 'feedback']]],
+          ['Protect shared order flow', [['shared', 'gateway'], ['open', 'order', 'position']]]
+        ],
+        f26: [
+          ['Market schedule and reference state are valid', [['calendar', 'session', 'reference'], ['official', 'market', 'state']]],
+          ['Data and connectivity are healthy', [['connectivity', 'market', 'data'], ['sequence', 'freshness']]],
+          ['Risk and order state are reconciled', [['position', 'limit'], ['open', 'order', 'risk']]],
+          ['Capacity, alerts, and ownership are ready', [['capacity', 'alert', 'owner'], ['evidence', 'go', 'no-go']]]
+        ],
+        f34: [
+          ['Confirm time, scope, and impact', [['time', 'scope', 'impact'], ['verified', 'symptom']]],
+          ['Protect trading risk', [['protect', 'trading'], ['contain', 'risk']]],
+          ['Preserve evidence and page owners', [['evidence', 'owner'], ['page', 'owner']]],
+          ['Start a timestamped record', [['timestamp', 'record'], ['decision', 'log']]]
+        ],
+        f36: [
+          ['State time and verified symptom', [['time', 'verified', 'symptom'], ['timestamp', 'observation']]],
+          ['State scope and trading risk', [['scope', 'risk'], ['impact', 'trading']]],
+          ['State control, action, and owner', [['control', 'action', 'owner'], ['containment', 'owner']]],
+          ['Commit to the next update', [['next', 'update'], ['update', 'time']]]
+        ],
+        f39: [
+          ['Headroom is spare tested capacity', [['spare', 'tested', 'capacity'], ['capacity', 'above', 'peak']]],
+          ['Peak and growth are modeled', [['peak', 'growth'], ['session', 'open', 'burst']]],
+          ['Failure and replay load are included', [['failover', 'replay'], ['redundancy', 'loss']]],
+          ['A safety margin remains', [['safety', 'margin'], ['headroom', 'margin']]]
+        ],
+        f45: [
+          ['Capacity and resilience are controlled', [['capacity', 'resilient'], ['continuity', 'capacity']]],
+          ['Limits prevent erroneous flow', [['limit', 'erroneous'], ['disorderly', 'order']]],
+          ['Monitoring and testing are continuous', [['monitoring', 'testing'], ['test', 'control']]],
+          ['Records make operations auditable', [['record', 'audit'], ['MiFID', 'record']]]
+        ],
+        f48: [
+          ['Position beyond generic support', [['not', 'generic', 'support'], ['production', 'market-data']]],
+          ['Name observability and incidents', [['observability', 'incident'], ['telemetry', 'monitoring']]],
+          ['Name capacity and exchange-facing systems', [['capacity', 'exchange'], ['production', 'system']]],
+          ['Connect experience to the role', [['trading', 'operations'], ['reliability', 'escalation']]]
+        ],
+        f91: [
+          ['Venue outcome is unknown', [['venue', 'outcome', 'unknown'], ['missing', 'terminal', 'evidence']]],
+          ['Blind retry is unsafe', [['not', 'retry'], ['blind', 'retry']]],
+          ['Identifiers must be correlated', [['correlate', 'identifier'], ['client', 'order', 'id']]],
+          ['Independent state resolves uncertainty', [['drop', 'copy'], ['open', 'order', 'venue', 'state']]]
+        ],
+        f103: [
+          ['Containment bounds impact', [['containment', 'impact'], ['pause', 'risk']]],
+          ['Recovery restores correct state', [['recovery', 'correct', 'state'], ['restore', 'service']]],
+          ['Contained does not mean recovered', [['contained', 'not', 'recovered'], ['position', 'unreconciled']]]
+        ],
+        f116: [
+          ['Explain abstract boundaries and signals', [['abstract', 'pipeline', 'signal'], ['diagnostic', 'boundary']]],
+          ['Exclude internal details', [['without', 'internal', 'name'], ['not', 'threshold', 'customer']]],
+          ['Show depth through reasoning', [['reasoning', 'depth'], ['evidence', 'decision']]]
+        ],
+        f117: [
+          ['Lead with the decision', [['decision', 'first'], ['state', 'safest', 'decision']]],
+          ['Support it with checks', [['check', 'support'], ['evidence', 'validate']]],
+          ['Keep pressure communication clear', [['clear', 'pressure'], ['concise', 'operational']]]
+        ]
+      };
+
+      function normalizeRecallText(value) {
+        return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+          .replace(/acknowledgement/g, 'acknowledgment').replace(/real[ -]?time/g, 'realtime')
+          .replace(/market[ -]?data/g, 'marketdata').replace(/top[ -]?of[ -]?book/g, 'topbook')
+          .replace(/[^a-z0-9%+.-]+/g, ' ').trim();
+      }
+
+      function recallStem(token) {
+        const word = String(token || '').replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '');
+        if (word.length <= 4) return word;
+        return word.replace(/(izations|isation|ization|ments|ation|ingly|edly|ing|ies|ied|ed|es|s)$/i, match => match === 'ies' || match === 'ied' ? 'y' : '');
+      }
+
+      function recallContext(value) {
+        const normalized = normalizeRecallText(value);
+        const tokens = normalized.split(/\s+/).map(recallStem).filter(Boolean);
+        return { normalized, tokens: new Set(tokens) };
+      }
+
+      function recallHasTerm(context, term) {
+        const expected = normalizeRecallText(term).split(/\s+/).map(recallStem).filter(Boolean);
+        return expected.length > 0 && expected.every(token => context.tokens.has(token));
+      }
+
+      function fallbackFlashRubric(card) {
+        const chunks = `${card.a}. ${card.deep}`.split(/[.;!?]/).map(value => value.trim()).filter(value => value.length >= 18);
+        const seen = new Set();
+        return chunks.map(chunk => {
+          const terms = normalizeRecallText(chunk).split(/\s+/).map(recallStem)
+            .filter(token => token.length >= 3 && !FLASH_RECALL_STOP_WORDS.has(token));
+          const unique = [...new Set(terms)].slice(0, 7);
+          const key = unique.slice(0, 3).join(':');
+          if (!unique.length || seen.has(key)) return null;
+          seen.add(key);
+          const minimum = Math.max(1, Math.min(3, Math.ceil(unique.length * .45)));
+          return { label: chunk.slice(0, 80), fallbackTerms: unique, minimum };
+        }).filter(Boolean).slice(0, 5);
+      }
+
+      function flashRubricFor(card) {
+        const override = FLASH_RUBRIC_OVERRIDES[card.id];
+        if (override) return override.map(([label, variants]) => ({ label, variants }));
+        return fallbackFlashRubric(card);
+      }
+
+      function flashRuleMatches(context, rule) {
+        if (rule.variants) return rule.variants.some(variant => variant.every(term => recallHasTerm(context, term)));
+        const hits = rule.fallbackTerms.filter(term => recallHasTerm(context, term)).length;
+        return hits >= rule.minimum;
+      }
+
+      function evaluateFlashResponse(card, answer, id = '') {
+        const context = recallContext(answer);
+        const rules = flashRubricFor(card);
+        const matched = rules.filter(rule => flashRuleMatches(context, rule)).map(rule => rule.label);
+        const missing = rules.filter(rule => !flashRuleMatches(context, rule)).map(rule => rule.label);
+        const coverageScore = rules.length ? Math.round(60 * matched.length / rules.length) : 0;
+        const wordCount = flashWordCount(answer);
+        const clauses = String(answer || '').split(/[.;!?]|\b(?:but|because|while|before|after|therefore|so that)\b/i).filter(part => part.trim().split(/\s+/).length >= 3).length;
+        const relation = /\b(is|means|requires|shows|proves|differs|while|before|after|because|therefore|but)\b/i.test(answer);
+        const structureScore = Math.min(25, (wordCount >= 12 ? 10 : wordCount >= 7 ? 6 : 2) + (relation ? 7 : 0) + (clauses >= 2 ? 8 : clauses === 1 ? 4 : 0));
+        const branchHits = (FLASH_BRANCH_TERMS[card.branch] || []).filter(term => recallHasTerm(context, term)).length;
+        const operationalSignal = /\b(check|compare|verify|scope|escalat|reconcil|monitor|sequence|timestamp|queue|position|limit|control|owner|evidence|session|latency|fresh)\w*/i.test(answer);
+        const specificityScore = Math.min(15, Math.min(9, branchHits * 3) + (operationalSignal ? 6 : 0));
+        return normalizeFlashAttempt({
+          id: id || `flash-attempt-${card.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+          cardId: card.id,
+          answer,
+          createdAt: new Date().toISOString(),
+          rubricVersion: FLASH_RUBRIC_VERSION,
+          wordCount,
+          coverageScore,
+          structureScore,
+          specificityScore,
+          matched,
+          missing
+        });
+      }
+
       const quizBank = [
         ['q01','feed','A feed is connected and heartbeats arrive, but sequence and event timestamps stop. Best status?',['Healthy','Transport up; data progression unhealthy','Commercially delayed'],1,'Connectivity does not prove usable market data.'],
         ['q02','market','Best bid 99.90, best ask 100.10. Midpoint?',['99.95','100.00','100.20'],1,'(99.90 + 100.10) / 2 = 100.00.'],
