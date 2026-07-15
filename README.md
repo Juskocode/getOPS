@@ -89,6 +89,7 @@ See [docs/architecture.md](docs/architecture.md) for the repository map, runtime
 cd "/Users/afreitas/Documents/Quant Trader interview prep/trading-ops-ascent"
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
 npm test
+npm run doctor
 ./scripts/compose.sh config -q
 ```
 

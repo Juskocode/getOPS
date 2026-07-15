@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "node frontend/build.mjs",
-    "test": "npm run build && node --test tests/test_frontend_contract.mjs tests/test_build_contract.mjs"
+    "test": "npm run build && node --test tests/test_frontend_contract.mjs tests/test_build_contract.mjs",
+    "doctor": "./scripts/doctor.sh"
   },
   "dependencies": {
     "lucide": "1.24.0"
