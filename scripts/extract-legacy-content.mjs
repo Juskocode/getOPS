@@ -31,6 +31,10 @@ const ids = new Set(cards.map((card) => card.id));
 if (ids.size !== cards.length) {
   throw new Error("Flashcard identifiers must be unique.");
 }
+const prompts = new Set(cards.map((card) => card.prompt));
+if (prompts.size !== cards.length) {
+  throw new Error("Flashcard prompts must be unique.");
+}
 
 const catalog = {
   schemaVersion: 1,

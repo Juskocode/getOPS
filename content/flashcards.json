@@ -600,7 +600,7 @@
     {
       "id": "f86",
       "branch": "feed",
-      "prompt": "Sequence domain",
+      "prompt": "Sequence reset boundaries",
       "answer": "The documented scope inside which sequence values establish ordering and continuity.",
       "deepDive": "Channels, partitions, sessions, and message classes may have independent counters and reset rules."
     },
