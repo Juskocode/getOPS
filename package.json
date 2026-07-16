@@ -9,8 +9,12 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run legacy:build",
-    "test": "npm run legacy:test",
+    "build": "npm run contracts:build && npm run web:build && npm run legacy:build",
+    "test": "npm run contracts:typecheck && npm run web:test && npm run legacy:test",
+    "web:dev": "npm run dev --workspace @getops/web",
+    "web:build": "npm run build --workspace @getops/web",
+    "web:typecheck": "npm run typecheck --workspace @getops/web",
+    "web:test": "npm run test --workspace @getops/web",
     "legacy:build": "node legacy/web/build.mjs",
     "legacy:test": "npm run legacy:build && node --test legacy/tests/test_frontend_contract.mjs legacy/tests/test_build_contract.mjs",
     "legacy:test:server": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s legacy/tests -p 'test_*.py' -v",

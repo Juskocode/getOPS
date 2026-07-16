@@ -9,6 +9,7 @@ node_modules/
 dist/
 index.html
 index.html.gz
+!apps/web/index.html
 apps/*/dist/
 packages/*/dist/
 services/*/build/
@@ -16,6 +17,7 @@ legacy/dist/
 legacy/index.html
 legacy/index.html.gz
 coverage/
+*.tsbuildinfo
 *.log
 npm-debug.log*
 

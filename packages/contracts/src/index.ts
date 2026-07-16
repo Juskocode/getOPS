@@ -44,7 +44,7 @@ export const flashAttemptSchema = z.object({
   cardId: z.string().regex(FLASHCARD_ID_PATTERN),
   answer: z.string().trim().min(20).max(1_200),
   createdAt: isoTimestampSchema,
-  rubricVersion: z.literal(2),
+  rubricVersion: z.union([z.literal(1), z.literal(2)]),
   wordCount: z.number().int().min(4).max(500),
   coverageScore: z.number().int().min(0).max(60),
   structureScore: z.number().int().min(0).max(25),
@@ -69,6 +69,7 @@ export const progressStateSchema = z
     flashRecent: z.array(z.string().regex(FLASHCARD_ID_PATTERN)).max(6).optional(),
     flashIndex: z.number().int().min(0).max(100_000).optional(),
     flashRevealed: z.boolean().optional(),
+    flashRewardClaims: z.array(z.string().min(1).max(80)).max(1_000).optional(),
   })
   .catchall(z.unknown());
 
