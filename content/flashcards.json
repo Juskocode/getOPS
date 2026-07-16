@@ -1,0 +1,1056 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "legacy/web/source.fragment.html@getOPS-v2",
+  "cards": [
+    {
+      "id": "f01",
+      "branch": "market",
+      "prompt": "Quote vs trade",
+      "answer": "A quote is displayed buying/selling interest with price and size. A trade is a completed execution at a price and quantity.",
+      "deepDive": "A quote can change without a trade; a trade may consume or alter quoted liquidity but can also involve non-displayed interest."
+    },
+    {
+      "id": "f02",
+      "branch": "market",
+      "prompt": "Bid, ask, spread, midpoint",
+      "answer": "Bid is best displayed buy; ask is best displayed sell; spread = ask - bid; midpoint = (bid + ask) / 2.",
+      "deepDive": "Always confirm whether the feed reports consolidated, venue-specific, indicative, or executable prices."
+    },
+    {
+      "id": "f03",
+      "branch": "market",
+      "prompt": "L1 vs L2",
+      "answer": "L1 is top-of-book price/size; L2 provides multiple price levels or market depth.",
+      "deepDive": "Provider definitions vary. Some L2 is price-level aggregated; some feeds expose order-by-order depth often called L3."
+    },
+    {
+      "id": "f04",
+      "branch": "market",
+      "prompt": "Aggressive vs passive order",
+      "answer": "An aggressive order crosses available liquidity; a passive order rests and supplies liquidity.",
+      "deepDive": "A marketable limit order is aggressive up to its price limit."
+    },
+    {
+      "id": "f05",
+      "branch": "market",
+      "prompt": "Price-time priority",
+      "answer": "Better price ranks first; at the same price, earlier orders normally rank first.",
+      "deepDive": "Venue rules can include allocation variants, hidden liquidity, and product-specific exceptions."
+    },
+    {
+      "id": "f06",
+      "branch": "market",
+      "prompt": "Tick size vs tick value",
+      "answer": "Tick size is the minimum price increment; tick value is the monetary PnL change per tick per contract.",
+      "deepDive": "Derivatives operations must know multiplier, currency, expiry, and settlement convention too."
+    },
+    {
+      "id": "f07",
+      "branch": "feed",
+      "prompt": "Snapshot vs incremental",
+      "answer": "A snapshot describes current state; an incremental describes a change to prior state.",
+      "deepDive": "Incrementals require a valid starting state and continuity. Recovery often combines a snapshot with buffered incrementals."
+    },
+    {
+      "id": "f08",
+      "branch": "feed",
+      "prompt": "Sequence number",
+      "answer": "An ordering identifier within a defined feed channel or partition used to detect gaps, duplicates, and ordering issues.",
+      "deepDive": "Never assume one global sequence across unrelated channels."
+    },
+    {
+      "id": "f09",
+      "branch": "feed",
+      "prompt": "What does a gap prove?",
+      "answer": "Some expected sequence values were not observed in that sequence domain.",
+      "deepDive": "It does not prove which messages were missed or whether loss occurred at venue, network, feed handler, or consumer."
+    },
+    {
+      "id": "f10",
+      "branch": "feed",
+      "prompt": "Delayed vs stale",
+      "answer": "Delayed data is intentionally behind by a known offset but progressing. Stale data unexpectedly stops or becomes too old to trust.",
+      "deepDive": "Both require timestamp and session context; delay can be contractual, staleness operational."
+    },
+    {
+      "id": "f11",
+      "branch": "feed",
+      "prompt": "Why unchanged price is not stale",
+      "answer": "A quiet instrument can retain the same price while the feed remains healthy.",
+      "deepDive": "Check event/receive time, sequence, heartbeat, size/trades, related instruments, session, and peers."
+    },
+    {
+      "id": "f12",
+      "branch": "feed",
+      "prompt": "Exchange, receive, publish timestamps",
+      "answer": "Exchange time marks venue event; receive time marks local arrival; publish time marks internal distribution.",
+      "deepDive": "Their differences localize external path versus internal processing, provided clocks and domains are aligned."
+    },
+    {
+      "id": "f13",
+      "branch": "feed",
+      "prompt": "Out-of-order vs duplicate",
+      "answer": "Out-of-order arrives later than its logical sequence; duplicate repeats an already processed event.",
+      "deepDive": "Policies differ: buffer/reorder, deduplicate, or trigger recovery according to feed protocol."
+    },
+    {
+      "id": "f14",
+      "branch": "feed",
+      "prompt": "Green socket fallacy",
+      "answer": "A connected transport can carry no progressing data or feed a blocked downstream path.",
+      "deepDive": "Validate message progression, queues, decoder/publisher health, subscriptions, and consumer freshness."
+    },
+    {
+      "id": "f15",
+      "branch": "feed",
+      "prompt": "Resynchronization proof",
+      "answer": "Authoritative state rebuilt, increments bridged, sequence/freshness valid, consumers caught up, and trading controls restored safely.",
+      "deepDive": "A reconnect alone is not recovery."
+    },
+    {
+      "id": "f16",
+      "branch": "feed",
+      "prompt": "Venue inconsistency",
+      "answer": "Two venues or feeds disagree beyond expected market/latency differences.",
+      "deepDive": "Check symbol mapping, session state, entitlement, timestamp alignment, consolidation rules, and independent sources."
+    },
+    {
+      "id": "f17",
+      "branch": "orders",
+      "prompt": "Sent vs acknowledged",
+      "answer": "Sent means emitted by one component; acknowledged means a downstream or venue response confirmed receipt/state.",
+      "deepDive": "Metric names must identify which boundary and whether counts are events, orders, or rates."
+    },
+    {
+      "id": "f18",
+      "branch": "orders",
+      "prompt": "CumQty, LeavesQty, LastQty",
+      "answer": "CumQty is total filled; LeavesQty remains open; LastQty is the latest execution quantity.",
+      "deepDive": "For ordinary states, CumQty + LeavesQty should reconcile with current order quantity, subject to protocol semantics."
+    },
+    {
+      "id": "f19",
+      "branch": "orders",
+      "prompt": "Cancel request vs cancel ack",
+      "answer": "A request asks to cancel; the order can still fill until cancellation is confirmed.",
+      "deepDive": "Race fills must update position even while status is Pending Cancel."
+    },
+    {
+      "id": "f20",
+      "branch": "orders",
+      "prompt": "IOC vs FOK",
+      "answer": "IOC fills available quantity immediately and cancels the rest; FOK requires complete immediate fill or none.",
+      "deepDive": "Venue-specific semantics and minimum quantity can matter."
+    },
+    {
+      "id": "f21",
+      "branch": "orders",
+      "prompt": "Self-trade prevention",
+      "answer": "A control prevents orders under the same participant/account grouping from executing against each other.",
+      "deepDive": "Modes may cancel/reject aggressing, resting, or both orders. A trigger is not itself proof of abuse."
+    },
+    {
+      "id": "f22",
+      "branch": "orders",
+      "prompt": "Order churn",
+      "answer": "High create/cancel/replace activity relative to stable placements or executions.",
+      "deepDive": "Measure rate, cancel-to-order, order-to-trade, venue limits, strategy intent, and market conditions."
+    },
+    {
+      "id": "f23",
+      "branch": "orders",
+      "prompt": "Reject storm first checks",
+      "answer": "Reason code, rate and baseline, strategy/symbol concentration, session, limits, retries, queues, open orders, and position.",
+      "deepDive": "Protect against retry feedback loops and shared-gateway impact."
+    },
+    {
+      "id": "f24",
+      "branch": "orders",
+      "prompt": "Order lifecycle funnel",
+      "answer": "Sent -> gateway accepted -> venue ack/new -> partial/full fill, cancel, replace, reject, expire.",
+      "deepDive": "Definitions and populations must be consistent; states and events must not be mixed."
+    },
+    {
+      "id": "f25",
+      "branch": "sessions",
+      "prompt": "Pre-open purpose",
+      "answer": "Collects interest and may form an opening price through auction rules before continuous trading.",
+      "deepDive": "Order eligibility, imbalance data, TIF, and cleanup behavior are venue-specific."
+    },
+    {
+      "id": "f26",
+      "branch": "sessions",
+      "prompt": "Pre-session checks",
+      "answer": "Calendar/session, reference data, connectivity, market data, time sync, positions, limits, credentials, capacity, alerts, owners.",
+      "deepDive": "Every check should produce evidence and a clear go/no-go rule."
+    },
+    {
+      "id": "f27",
+      "branch": "sessions",
+      "prompt": "In-session invariants",
+      "answer": "Positions, connectivity, latency, market-data consistency, error rates, limits, open orders, and control state.",
+      "deepDive": "Thresholds must be session/product/strategy-aware."
+    },
+    {
+      "id": "f28",
+      "branch": "sessions",
+      "prompt": "Post-session closeout",
+      "answer": "Reconcile orders, fills, positions, PnL, venue/drop copy, unresolved errors, logs, and handoff.",
+      "deepDive": "A break needs owner, severity, evidence, and next action before closeout."
+    },
+    {
+      "id": "f29",
+      "branch": "monitoring",
+      "prompt": "Count vs rate",
+      "answer": "Count is events in a defined scope/window; rate is events per time unit.",
+      "deepDive": "Last may be latest bucket, not total. Reset and missing-data behavior matter."
+    },
+    {
+      "id": "f30",
+      "branch": "monitoring",
+      "prompt": "Why p50 is insufficient",
+      "answer": "Median can remain healthy while a significant tail becomes dangerously slow.",
+      "deepDive": "Use p95/p99/p999/max, queue age, affected volume, and business impact."
+    },
+    {
+      "id": "f31",
+      "branch": "monitoring",
+      "prompt": "Symptom vs cause vs impact",
+      "answer": "Symptom: latency high. Cause evidence: queue/thread saturation. Impact: strategies receive stale data or orders miss timing.",
+      "deepDive": "Dashboards should make these layers correlatable without claiming causality automatically."
+    },
+    {
+      "id": "f32",
+      "branch": "monitoring",
+      "prompt": "Actionable alert",
+      "answer": "States a broken invariant, scope, urgency, evidence, route, and expected operator action.",
+      "deepDive": "Session-aware multi-signal alerts reduce false positives and alert fatigue."
+    },
+    {
+      "id": "f33",
+      "branch": "monitoring",
+      "prompt": "Metric semantic checklist",
+      "answer": "Definition, unit, type, labels, population, clock, window, aggregation, resets, missing-data behavior, owner.",
+      "deepDive": "Do this before comparing panels or calculating ratios."
+    },
+    {
+      "id": "f34",
+      "branch": "incident",
+      "prompt": "First two minutes",
+      "answer": "Confirm time/scope/impact, protect trading, preserve evidence, page the right owners, start a timestamped record.",
+      "deepDive": "Root cause can wait; unmanaged trading risk cannot."
+    },
+    {
+      "id": "f35",
+      "branch": "incident",
+      "prompt": "Severity without root cause",
+      "answer": "Use actual/plausible trading impact, scope, control state, exposure, and time sensitivity.",
+      "deepDive": "Diagnostic uncertainty does not prevent severity classification."
+    },
+    {
+      "id": "f36",
+      "branch": "incident",
+      "prompt": "Good escalation update",
+      "answer": "Time, verified symptom, scope, risk, action/control, owner, and next update.",
+      "deepDive": "Keep hypotheses labeled and quantify metrics where possible."
+    },
+    {
+      "id": "f37",
+      "branch": "incident",
+      "prompt": "Scoped containment",
+      "answer": "Apply the smallest approved control that reliably stops risk and preserves healthy flow.",
+      "deepDive": "State authority, open-order effect, verification, and rollback."
+    },
+    {
+      "id": "f38",
+      "branch": "incident",
+      "prompt": "Recovery criteria",
+      "answer": "State and data consistent, queues drained, limits/positions known, alerts stable, controls restored, owner approves.",
+      "deepDive": "Green dashboards alone do not prove recovery."
+    },
+    {
+      "id": "f39",
+      "branch": "capacity",
+      "prompt": "Capacity headroom",
+      "answer": "Spare tested capacity above modeled peak and failure load.",
+      "deepDive": "Include growth, open bursts, replay, failover, redundancy loss, and safety margin."
+    },
+    {
+      "id": "f40",
+      "branch": "capacity",
+      "prompt": "Arrival-service deficit",
+      "answer": "If arrival rate exceeds processing rate, backlog grows by their difference.",
+      "deepDive": "Queue age converts backlog into freshness risk; catch-up requires service rate above arrival."
+    },
+    {
+      "id": "f41",
+      "branch": "capacity",
+      "prompt": "Backpressure signals",
+      "answer": "Queue depth/age, consumer lag, input-output delta, blocked callbacks, drops, CPU/thread/GC/network saturation.",
+      "deepDive": "One host average can hide a hot thread or partition."
+    },
+    {
+      "id": "f42",
+      "branch": "capacity",
+      "prompt": "Representative stress test",
+      "answer": "Peak burst plus recovery/replay, impaired redundancy, and a slow consumer.",
+      "deepDive": "Pass criteria include correctness, bounded latency, no silent loss, alerts, controls, and recovery."
+    },
+    {
+      "id": "f43",
+      "branch": "risk",
+      "prompt": "Position reconciliation",
+      "answer": "Rebuild position from authoritative fills and compare independent sources.",
+      "deepDive": "Quantify the signed break and every downstream consumer before correction."
+    },
+    {
+      "id": "f44",
+      "branch": "risk",
+      "prompt": "Kill functionality",
+      "answer": "An approved control to stop algorithmic trading at a defined scope.",
+      "deepDive": "Verify submissions stopped, open orders handled, positions known, authorization logged, and restart controlled."
+    },
+    {
+      "id": "f45",
+      "branch": "risk",
+      "prompt": "MiFID Article 17 operations",
+      "answer": "Resilient capacity, limits, prevention of erroneous/disorderly orders, monitoring, continuity, testing, and records.",
+      "deepDive": "Treat it as an operating model, not a memorization test."
+    },
+    {
+      "id": "f46",
+      "branch": "risk",
+      "prompt": "Time-sequenced records",
+      "answer": "Accurate ordered records of orders, cancellations, executions, quotations, controls, and decisions where required.",
+      "deepDive": "Clock integrity and immutable identifiers are operational control dependencies."
+    },
+    {
+      "id": "f47",
+      "branch": "risk",
+      "prompt": "Market-conduct escalation",
+      "answer": "Patterns suggesting disorderly trading or prohibited behavior must be preserved and escalated through compliance/risk procedures.",
+      "deepDive": "Operations should identify indicators and evidence without making unsupported legal conclusions."
+    },
+    {
+      "id": "f48",
+      "branch": "interview",
+      "prompt": "Your anchor",
+      "answer": "My background is not generic support: I work close to market-data production, observability, incidents, capacity, and exchange-facing systems.",
+      "deepDive": "Connect each claim to one specific production example and a trading-operations responsibility."
+    },
+    {
+      "id": "f49",
+      "branch": "market",
+      "prompt": "Crossed versus locked book",
+      "answer": "Locked means best bid equals best ask; crossed means best bid exceeds best ask.",
+      "deepDive": "Validate venue phase, timestamp alignment, feed semantics, and reconstruction before calling either state impossible."
+    },
+    {
+      "id": "f50",
+      "branch": "market",
+      "prompt": "Auction imbalance",
+      "answer": "The unmatched buy or sell interest remaining at a candidate auction price.",
+      "deepDive": "Interpret imbalance with indicative price, paired volume, update timing, and venue tie-break rules."
+    },
+    {
+      "id": "f51",
+      "branch": "market",
+      "prompt": "Displayed versus hidden liquidity",
+      "answer": "Displayed size is visible in the book; hidden or reserve quantity is not fully shown.",
+      "deepDive": "Replenishment can make displayed size reappear without a new visible participant."
+    },
+    {
+      "id": "f52",
+      "branch": "market",
+      "prompt": "VWAP execution price",
+      "answer": "Quantity-weighted average price across executions.",
+      "deepDive": "Use actual fills and quantities; a simple average of price levels is wrong when fill sizes differ."
+    },
+    {
+      "id": "f53",
+      "branch": "feed",
+      "prompt": "Sequence domain",
+      "answer": "The exact channel, partition, session, or stream within which sequence continuity is defined.",
+      "deepDive": "A jump across two unrelated domains is not a gap. Scope before counting missing messages."
+    },
+    {
+      "id": "f54",
+      "branch": "feed",
+      "prompt": "Recovery boundary",
+      "answer": "The sequence or state point where an authoritative snapshot and buffered incrementals join.",
+      "deepDive": "Avoid both missing and double-applying events around the boundary."
+    },
+    {
+      "id": "f55",
+      "branch": "feed",
+      "prompt": "Event-time freshness",
+      "answer": "How old the source event is relative to a trusted current clock.",
+      "deepDive": "Pair it with receive, publish, and consumer age to localize where delay entered."
+    },
+    {
+      "id": "f56",
+      "branch": "feed",
+      "prompt": "Subscription contract",
+      "answer": "The symbols, event types, products, entitlements, and routing scope a consumer requested.",
+      "deepDive": "A healthy shared feed can still fail one consumer when any part of this contract is wrong."
+    },
+    {
+      "id": "f57",
+      "branch": "feed",
+      "prompt": "Book checksum",
+      "answer": "A protocol-provided or locally derived digest used to validate reconstructed state.",
+      "deepDive": "A checksum mismatch is strong integrity evidence but must be interpreted at the documented sequence point."
+    },
+    {
+      "id": "f58",
+      "branch": "feed",
+      "prompt": "Conflation",
+      "answer": "Combining multiple updates into a reduced output representation.",
+      "deepDive": "Conflation may be intentional, but consumers must know whether intermediate states are omitted."
+    },
+    {
+      "id": "f59",
+      "branch": "orders",
+      "prompt": "Pending replace",
+      "answer": "A replace request is in flight while the prior order state may still execute.",
+      "deepDive": "Apply valid fills and wait for authoritative replace or reject state before assuming new terms."
+    },
+    {
+      "id": "f60",
+      "branch": "orders",
+      "prompt": "Duplicate client order ID",
+      "answer": "Reuse of an identifier that should uniquely correlate an order request.",
+      "deepDive": "Blind retry can create this condition; verify prior acceptance before generating a new ID or resending."
+    },
+    {
+      "id": "f61",
+      "branch": "orders",
+      "prompt": "Throttle window",
+      "answer": "The venue or gateway counting interval used for a message-rate limit.",
+      "deepDive": "Know whether it is fixed, rolling, burst, per session, per participant, or per message type."
+    },
+    {
+      "id": "f62",
+      "branch": "orders",
+      "prompt": "Leaves quantity invariant",
+      "answer": "For normal order states, cumulative filled plus remaining quantity reconciles to current order quantity.",
+      "deepDive": "Busts, corrections, replaces, and protocol-specific states require documented handling."
+    },
+    {
+      "id": "f63",
+      "branch": "sessions",
+      "prompt": "No-go latch",
+      "answer": "A control that keeps trading disabled until explicit readiness evidence and authorization exist.",
+      "deepDive": "Green connectivity must not silently clear failures in limits, time, positions, or reference data."
+    },
+    {
+      "id": "f64",
+      "branch": "sessions",
+      "prompt": "Special-session risk",
+      "answer": "Early closes, auctions, halts, DST, and maintenance alter expected events and allowed actions.",
+      "deepDive": "Treat calendars and phase transitions as production control data."
+    },
+    {
+      "id": "f65",
+      "branch": "sessions",
+      "prompt": "Canary order",
+      "answer": "A tightly scoped approved order used to validate an order path before broader enablement.",
+      "deepDive": "Define instrument, quantity, price protection, owner, success criteria, and cleanup before sending it."
+    },
+    {
+      "id": "f66",
+      "branch": "monitoring",
+      "prompt": "Oldest-message age",
+      "answer": "Elapsed time since the oldest unprocessed message entered a queue.",
+      "deepDive": "It directly expresses freshness risk and is often more decision-useful than depth alone."
+    },
+    {
+      "id": "f67",
+      "branch": "monitoring",
+      "prompt": "Counter reset handling",
+      "answer": "A cumulative metric may drop after restart, rollover, or label change.",
+      "deepDive": "Rate queries must detect resets rather than interpret the drop as negative activity."
+    },
+    {
+      "id": "f68",
+      "branch": "monitoring",
+      "prompt": "Missing versus zero",
+      "answer": "Missing telemetry means no trustworthy sample; zero means a measured value of zero.",
+      "deepDive": "Dashboards and alerts must represent these states differently."
+    },
+    {
+      "id": "f69",
+      "branch": "monitoring",
+      "prompt": "Session-aware baseline",
+      "answer": "Expected metric behavior conditioned on market phase, product, strategy, and day type.",
+      "deepDive": "One all-day threshold either misses peaks or pages on normal opens."
+    },
+    {
+      "id": "f70",
+      "branch": "incident",
+      "prompt": "Containment verification",
+      "answer": "Proof that the chosen control actually stopped or bounded the risky behavior.",
+      "deepDive": "Check order submissions, open orders, positions, queues, freshness, and affected peer flow after acting."
+    },
+    {
+      "id": "f71",
+      "branch": "incident",
+      "prompt": "Hypothesis discipline",
+      "answer": "Label suspected causes separately from verified observations.",
+      "deepDive": "Severity and containment can be decided from impact even while root cause remains unknown."
+    },
+    {
+      "id": "f72",
+      "branch": "incident",
+      "prompt": "Next-update contract",
+      "answer": "A named owner and exact time for the next stakeholder update.",
+      "deepDive": "It reduces chat noise and prevents silent diagnostic drift during high-pressure incidents."
+    },
+    {
+      "id": "f73",
+      "branch": "incident",
+      "prompt": "Decision log",
+      "answer": "Timestamped record of facts, options, decisions, authority, actions, and outcomes.",
+      "deepDive": "It supports handoff, auditability, post-incident learning, and reconstruction under uncertainty."
+    },
+    {
+      "id": "f74",
+      "branch": "capacity",
+      "prompt": "Failure-load headroom",
+      "answer": "Capacity remaining after a node, link, partition, or dependency is impaired.",
+      "deepDive": "All-nodes-healthy headroom is not enough for a resilient trading service."
+    },
+    {
+      "id": "f75",
+      "branch": "capacity",
+      "prompt": "Catch-up condition",
+      "answer": "Service rate must exceed arrival rate long enough to drain backlog.",
+      "deepDive": "Recovery time is backlog divided by net drain rate, plus realistic overhead and validation."
+    },
+    {
+      "id": "f76",
+      "branch": "capacity",
+      "prompt": "Hot-partition risk",
+      "answer": "One serial thread or partition saturates while aggregate host metrics look healthy.",
+      "deepDive": "Inspect per-thread, per-core, per-partition, and queue-age signals before trusting averages."
+    },
+    {
+      "id": "f77",
+      "branch": "risk",
+      "prompt": "Soft versus hard limit",
+      "answer": "A soft limit alerts or requires approval; a hard limit blocks progression under defined rules.",
+      "deepDive": "Exact behavior is firm-specific and must be known before operating or testing controls."
+    },
+    {
+      "id": "f78",
+      "branch": "risk",
+      "prompt": "Independent position source",
+      "answer": "A separately produced execution or position record used to challenge internal state.",
+      "deepDive": "Independence matters: copying the disputed source does not create reconciliation evidence."
+    },
+    {
+      "id": "f79",
+      "branch": "risk",
+      "prompt": "Kill-switch restart gate",
+      "answer": "The conditions and authority required to restore trading after kill functionality.",
+      "deepDive": "Verify submissions, open orders, fills, positions, limits, data, and the cause or mitigation before restart."
+    },
+    {
+      "id": "f80",
+      "branch": "interview",
+      "prompt": "Structured uncertainty",
+      "answer": "State what is observed, what remains a hypothesis, what risk exists, and how you would verify safely.",
+      "deepDive": "This is stronger than bluffing venue-specific knowledge and demonstrates calm operational judgment."
+    },
+    {
+      "id": "f81",
+      "branch": "market",
+      "prompt": "Locked market",
+      "answer": "Best bid equals best ask, producing a displayed spread of zero.",
+      "deepDive": "Validate venue rules, phase, timing, and event order before deciding whether it is expected or faulty."
+    },
+    {
+      "id": "f82",
+      "branch": "market",
+      "prompt": "Crossed market",
+      "answer": "Best bid is greater than best ask in the observed view.",
+      "deepDive": "A consolidated cross can come from asynchronous venues or stale components; direct-book and timestamp context matter."
+    },
+    {
+      "id": "f83",
+      "branch": "market",
+      "prompt": "Auction indicative price",
+      "answer": "The price at which an auction would currently maximize executable volume under venue rules.",
+      "deepDive": "It is provisional, can move, and should be read with volume, imbalance, phase, and extension state."
+    },
+    {
+      "id": "f84",
+      "branch": "market",
+      "prompt": "Reserve or iceberg liquidity",
+      "answer": "Only part of an orders total quantity is displayed while additional quantity can replenish.",
+      "deepDive": "Do not infer exact hidden size or participant intent from one replenishment pattern."
+    },
+    {
+      "id": "f85",
+      "branch": "feed",
+      "prompt": "Redundant-feed arbitration",
+      "answer": "Rules selecting or combining equivalent events from multiple delivery paths.",
+      "deepDive": "It requires deterministic identity, duplicate protection, validity checks, and observable path switches."
+    },
+    {
+      "id": "f86",
+      "branch": "feed",
+      "prompt": "Sequence domain",
+      "answer": "The documented scope inside which sequence values establish ordering and continuity.",
+      "deepDive": "Channels, partitions, sessions, and message classes may have independent counters and reset rules."
+    },
+    {
+      "id": "f87",
+      "branch": "feed",
+      "prompt": "Freshness watermark",
+      "answer": "The newest trusted event or processing point reached by a stream or consumer.",
+      "deepDive": "Watermarks expose lag even when prices are unchanged and queues look small."
+    },
+    {
+      "id": "f88",
+      "branch": "feed",
+      "prompt": "Recovery amplification",
+      "answer": "Many clients independently requesting the same replay and consuming shared capacity.",
+      "deepDive": "Coalesce, cache, bound, and prioritize recovery so live traffic remains protected."
+    },
+    {
+      "id": "f89",
+      "branch": "feed",
+      "prompt": "Unknown-message control",
+      "answer": "Telemetry and policy for protocol messages a decoder cannot recognize.",
+      "deepDive": "Failing silently after a venue schema change can corrupt state without obvious transport failure."
+    },
+    {
+      "id": "f90",
+      "branch": "feed",
+      "prompt": "Timestamp unit contract",
+      "answer": "The unit, epoch, clock domain, and capture boundary of a timestamp field.",
+      "deepDive": "Nanosecond-versus-microsecond mistakes can produce values wrong by orders of magnitude."
+    },
+    {
+      "id": "f91",
+      "branch": "orders",
+      "prompt": "Uncertain order state",
+      "answer": "The venue outcome is unknown because acceptance, rejection, or terminal evidence is missing.",
+      "deepDive": "Do not blind-retry; correlate identifiers and query drop copy, open orders, or venue state."
+    },
+    {
+      "id": "f92",
+      "branch": "orders",
+      "prompt": "PossDup replay semantics",
+      "answer": "A replayed session message is marked as potentially previously delivered.",
+      "deepDive": "Transport continuity must be restored without applying fills or acknowledgements twice."
+    },
+    {
+      "id": "f93",
+      "branch": "orders",
+      "prompt": "Post-only order",
+      "answer": "An order intended to add liquidity rather than execute immediately.",
+      "deepDive": "Venues may reject or reprice a crossing post-only order; exact behavior must be confirmed."
+    },
+    {
+      "id": "f94",
+      "branch": "orders",
+      "prompt": "Mass-cancel proof",
+      "answer": "Evidence that every in-scope live order reached a verified terminal or accepted exception state.",
+      "deepDive": "A successful command response alone is intent evidence, not complete order-state proof."
+    },
+    {
+      "id": "f95",
+      "branch": "sessions",
+      "prompt": "Auction extension",
+      "answer": "The venue keeps an auction phase open beyond its planned transition time.",
+      "deepDive": "Drive controls from official state rather than the expected wall-clock transition."
+    },
+    {
+      "id": "f96",
+      "branch": "sessions",
+      "prompt": "Reopen gate",
+      "answer": "Conditions required before trading resumes after a halt or maintenance event.",
+      "deepDive": "Validate official state, data rebuild, orders, positions, limits, queues, and authority."
+    },
+    {
+      "id": "f97",
+      "branch": "sessions",
+      "prompt": "Explicit handoff",
+      "answer": "The receiving owner acknowledges current state, risk, controls, evidence, and next decision time.",
+      "deepDive": "Ownership remains with the current operator until transfer is accepted."
+    },
+    {
+      "id": "f98",
+      "branch": "sessions",
+      "prompt": "Calendar propagation",
+      "answer": "Distribution of holidays, early closes, auctions, DST, and maintenance schedules to every dependent system.",
+      "deepDive": "Monitoring, strategies, risk, and order gateways must agree on the active phase."
+    },
+    {
+      "id": "f99",
+      "branch": "monitoring",
+      "prompt": "Freshness as a metric",
+      "answer": "Age of the newest trusted event at a named processing or consumer boundary.",
+      "deepDive": "Pair it with sequence and expected activity so quiet markets are not misclassified."
+    },
+    {
+      "id": "f100",
+      "branch": "monitoring",
+      "prompt": "Burn-rate alert",
+      "answer": "Rate at which an SLO error budget is being consumed over a defined window.",
+      "deepDive": "Fast and slow windows distinguish acute failure from sustained deterioration."
+    },
+    {
+      "id": "f101",
+      "branch": "monitoring",
+      "prompt": "Metric population",
+      "answer": "The exact set of events, orders, consumers, or sessions included in a measurement.",
+      "deepDive": "Numerator and denominator must describe compatible populations."
+    },
+    {
+      "id": "f102",
+      "branch": "monitoring",
+      "prompt": "Telemetry dependency",
+      "answer": "A signal whose own absence changes the confidence or safety of another control.",
+      "deepDive": "Missing monitoring should be explicit, not silently rendered as healthy zero."
+    },
+    {
+      "id": "f103",
+      "branch": "incident",
+      "prompt": "Containment versus recovery",
+      "answer": "Containment bounds impact; recovery restores verified correct service and business state.",
+      "deepDive": "A paused strategy may be contained while books, orders, or positions remain unreconciled."
+    },
+    {
+      "id": "f104",
+      "branch": "incident",
+      "prompt": "Blast radius statement",
+      "answer": "A precise description of affected strategy, symbol, venue, region, service, or consumer path.",
+      "deepDive": "State both confirmed scope and evidence that shared peers remain healthy."
+    },
+    {
+      "id": "f105",
+      "branch": "incident",
+      "prompt": "Provisional recovery",
+      "answer": "Symptoms are cleared but cause, recurrence risk, or full invariant proof is incomplete.",
+      "deepDive": "Keep heightened monitoring, residual-risk ownership, and a defined validation window."
+    },
+    {
+      "id": "f106",
+      "branch": "incident",
+      "prompt": "Evidence boundary",
+      "answer": "The source, capture point, clock, query, population, and time window behind an observation.",
+      "deepDive": "It lets another operator reproduce the claim and avoid comparing unlike data."
+    },
+    {
+      "id": "f107",
+      "branch": "capacity",
+      "prompt": "Net drain rate",
+      "answer": "Service rate minus arrival rate while a backlog is shrinking.",
+      "deepDive": "Ideal drain time is backlog divided by net drain, before overhead and validation."
+    },
+    {
+      "id": "f108",
+      "branch": "capacity",
+      "prompt": "Packet-rate ceiling",
+      "answer": "A per-second packet-processing limit reached before link bandwidth is full.",
+      "deepDive": "Inspect NIC rings, interrupts, CPU affinity, socket buffers, and drops."
+    },
+    {
+      "id": "f109",
+      "branch": "capacity",
+      "prompt": "Replay isolation",
+      "answer": "Separation or prioritization that prevents recovery traffic from starving live flow.",
+      "deepDive": "Bound replay concurrency and verify live freshness while catch-up proceeds."
+    },
+    {
+      "id": "f110",
+      "branch": "capacity",
+      "prompt": "Load-test correctness gate",
+      "answer": "Loss, ordering, state, latency, recovery, and control behavior required in addition to throughput.",
+      "deepDive": "A high rate with silent loss is not a passing result for a correctness-critical path."
+    },
+    {
+      "id": "f111",
+      "branch": "risk",
+      "prompt": "Control-input risk",
+      "answer": "A risk control can make the wrong decision when reference price, symbol, session, or limit version is wrong.",
+      "deepDive": "Monitor input freshness and provenance as part of control health."
+    },
+    {
+      "id": "f112",
+      "branch": "risk",
+      "prompt": "Residual route",
+      "answer": "An order path or identity not covered by the invoked containment control.",
+      "deepDive": "Verify every eligible route rather than assuming control scope from its name."
+    },
+    {
+      "id": "f113",
+      "branch": "risk",
+      "prompt": "Trade bust",
+      "answer": "A venue or market action cancelling a previously reported execution under defined rules.",
+      "deepDive": "Apply compensating position, PnL, reporting, and audit updates without deleting history."
+    },
+    {
+      "id": "f114",
+      "branch": "risk",
+      "prompt": "Restart authority",
+      "answer": "The named role allowed to restore trading after a control event.",
+      "deepDive": "Restart requires verified state, mitigated risk, documented evidence, and explicit approval."
+    },
+    {
+      "id": "f115",
+      "branch": "interview",
+      "prompt": "Transfer narrative",
+      "answer": "Connect market-data production, observability, incidents, and capacity work to trading controls and reliability.",
+      "deepDive": "Lead with decisions and evidence rather than presenting yourself as generic support."
+    },
+    {
+      "id": "f116",
+      "branch": "interview",
+      "prompt": "Confidentiality-safe depth",
+      "answer": "Explain the abstract pipeline, signals, and diagnostic boundaries without internal names, thresholds, or customer details.",
+      "deepDive": "Depth comes from reasoning quality, not proprietary disclosure."
+    },
+    {
+      "id": "f117",
+      "branch": "interview",
+      "prompt": "Decision-first answer",
+      "answer": "State the safest operational decision before listing the checks that support it.",
+      "deepDive": "This keeps a technical answer clear under time pressure."
+    },
+    {
+      "id": "f118",
+      "branch": "interview",
+      "prompt": "Strong STAR result",
+      "answer": "A measurable improvement in detection, response, reliability, capacity risk, or operator effort.",
+      "deepDive": "Quantify honestly and explain your contribution, not only team activity."
+    },
+    {
+      "id": "f119",
+      "branch": "interview",
+      "prompt": "Venue-specific unknown",
+      "answer": "Name the assumption boundary and the authoritative specification, runbook, or owner you would consult.",
+      "deepDive": "Do not universalize behavior across venues or bluff direct experience."
+    },
+    {
+      "id": "f120",
+      "branch": "interview",
+      "prompt": "Six-month success question",
+      "answer": "Ask which controls, incidents, and operating outcomes distinguish an excellent specialist after six months.",
+      "deepDive": "This reveals real expectations, decision authority, and the teams reliability culture."
+    },
+    {
+      "id": "f121",
+      "branch": "market",
+      "prompt": "Market impact versus spread cost",
+      "answer": "Spread cost is paid for crossing displayed prices; market impact is the additional price movement caused or revealed by the order.",
+      "deepDive": "Separate temporary impact, permanent impact, fees, and opportunity cost when evaluating execution quality."
+    },
+    {
+      "id": "f122",
+      "branch": "market",
+      "prompt": "Microprice intuition",
+      "answer": "A microprice adjusts the midpoint using top-of-book imbalance to estimate short-horizon pressure.",
+      "deepDive": "It is a model signal, not an executable price or a guarantee of the next trade."
+    },
+    {
+      "id": "f123",
+      "branch": "market",
+      "prompt": "Queue position",
+      "answer": "An estimate of how much same-price liquidity is ahead of a resting order under venue priority rules.",
+      "deepDive": "Adds, cancels, hidden liquidity, amendments, and uncertain feed visibility make queue position probabilistic."
+    },
+    {
+      "id": "f124",
+      "branch": "market",
+      "prompt": "Maker versus taker",
+      "answer": "A maker order adds resting liquidity; a taker order removes available liquidity.",
+      "deepDive": "Fee labels do not replace the venue rulebook, and a marketable limit order normally takes liquidity."
+    },
+    {
+      "id": "f125",
+      "branch": "market",
+      "prompt": "Trade-through investigation",
+      "answer": "A trade appears to execute through a better displayed price in the relevant market view.",
+      "deepDive": "Align timestamps, venue scope, protection rules, hidden or conditional orders, and feed completeness before concluding a violation."
+    },
+    {
+      "id": "f126",
+      "branch": "feed",
+      "prompt": "A/B feed arbitration",
+      "answer": "Two equivalent delivery lines are compared or combined to improve resilience and recover packet loss.",
+      "deepDive": "Event identity, deterministic precedence, duplicate suppression, and observable path switching are mandatory."
+    },
+    {
+      "id": "f127",
+      "branch": "feed",
+      "prompt": "Packet gap recovery",
+      "answer": "Detect missing packets in one sequence domain, request or consume replay, and bridge them into the live stream without omission or duplication.",
+      "deepDive": "Bound recovery traffic and prove downstream state after the join point."
+    },
+    {
+      "id": "f128",
+      "branch": "feed",
+      "prompt": "Conflated market data",
+      "answer": "Multiple source updates are intentionally collapsed into fewer downstream publications.",
+      "deepDive": "Conflation changes event granularity and latency semantics; it must not be mistaken for packet loss."
+    },
+    {
+      "id": "f129",
+      "branch": "feed",
+      "prompt": "Symbol mapping failure",
+      "answer": "A venue instrument is mapped to the wrong, missing, or stale downstream identifier.",
+      "deepDive": "Check effective dates, venue codes, corporate actions, product metadata, and every translation boundary."
+    },
+    {
+      "id": "f130",
+      "branch": "feed",
+      "prompt": "Entitlement failure",
+      "answer": "A user or service lacks permission for the required product, venue, depth, or event type.",
+      "deepDive": "Shared feed health can remain green while one consumer receives partial or no data."
+    },
+    {
+      "id": "f131",
+      "branch": "orders",
+      "prompt": "Order latency boundaries",
+      "answer": "Measure strategy decision, gateway receive, venue send, venue acknowledgment, and execution timestamps as distinct segments.",
+      "deepDive": "A single round-trip average cannot identify whether delay is local, network, venue, or queue related."
+    },
+    {
+      "id": "f132",
+      "branch": "orders",
+      "prompt": "Cancel-on-disconnect",
+      "answer": "A venue or gateway control that cancels eligible live orders when a defined session disconnects.",
+      "deepDive": "Scope, activation, exclusions, proof of cancellation, and reconnect behavior must be tested."
+    },
+    {
+      "id": "f133",
+      "branch": "orders",
+      "prompt": "Duplicate execution protection",
+      "answer": "Execution identity and idempotent processing prevent replayed fills from changing position twice.",
+      "deepDive": "PossDup or transport replay is evidence to reconcile, not permission to discard every repeated-looking message."
+    },
+    {
+      "id": "f134",
+      "branch": "orders",
+      "prompt": "Drop copy",
+      "answer": "An independent execution or order-event stream used for monitoring, reconciliation, and risk control.",
+      "deepDive": "It improves evidence independence but has its own latency, completeness, sequencing, and entitlement boundaries."
+    },
+    {
+      "id": "f135",
+      "branch": "sessions",
+      "prompt": "Session sequence reset",
+      "answer": "Some protocol counters reset at a documented session, channel, or trading-day boundary.",
+      "deepDive": "Expected resets must come from protocol state; an unexplained backward jump remains an integrity event."
+    },
+    {
+      "id": "f136",
+      "branch": "risk",
+      "prompt": "Price collar",
+      "answer": "A control rejects or constrains orders outside an allowed reference-price range.",
+      "deepDive": "Reference source, freshness, band version, product state, and override authority are part of control health."
+    },
+    {
+      "id": "f137",
+      "branch": "sessions",
+      "prompt": "Circuit breaker",
+      "answer": "A market mechanism that pauses or constrains trading after defined price or volatility conditions.",
+      "deepDive": "Use official phase messages and product rules; do not infer control state only from absent trades."
+    },
+    {
+      "id": "f138",
+      "branch": "market",
+      "prompt": "Auction uncross",
+      "answer": "The auction matches eligible interest at the venue-determined clearing price and transitions orders under venue rules.",
+      "deepDive": "Validate final price, executed quantity, residual orders, extensions, and the following market phase."
+    },
+    {
+      "id": "f139",
+      "branch": "monitoring",
+      "prompt": "Alert grouping and deduplication",
+      "answer": "Related symptoms are correlated into one actionable incident signal while repeated identical notifications are suppressed.",
+      "deepDive": "Preserve scope changes and severity escalation so deduplication does not hide a growing blast radius."
+    },
+    {
+      "id": "f140",
+      "branch": "monitoring",
+      "prompt": "Market-data freshness SLO",
+      "answer": "A stated objective for the share of trusted updates or consumers remaining below a defined age at a named boundary.",
+      "deepDive": "Define population, active session, clock, exclusions, windows, and missing-data treatment."
+    },
+    {
+      "id": "f141",
+      "branch": "monitoring",
+      "prompt": "Telemetry cardinality risk",
+      "answer": "Unbounded label combinations increase storage, query, and alert-evaluation cost.",
+      "deepDive": "Keep identifiers needed for diagnosis while controlling dynamic labels and preserving drill-down paths."
+    },
+    {
+      "id": "f142",
+      "branch": "capacity",
+      "prompt": "Saturation versus utilization",
+      "answer": "Utilization is consumed capacity; saturation is queued work or delay caused by insufficient service capacity.",
+      "deepDive": "A resource can show moderate average utilization while a serial partition is saturated."
+    },
+    {
+      "id": "f143",
+      "branch": "incident",
+      "prompt": "Incident communication channel",
+      "answer": "A designated timestamped path for verified facts, decisions, owners, and next updates.",
+      "deepDive": "Separate operational command from noisy investigation while linking evidence and preserving auditability."
+    },
+    {
+      "id": "f144",
+      "branch": "incident",
+      "prompt": "Rollback criteria",
+      "answer": "Predefined evidence that a change should be reversed because risk, correctness, or service health crossed a boundary.",
+      "deepDive": "Include authority, state compatibility, data migration effects, and validation after rollback."
+    },
+    {
+      "id": "f145",
+      "branch": "incident",
+      "prompt": "Deterministic replay",
+      "answer": "Reprocessing the same ordered input and configuration should produce an explainable repeatable state.",
+      "deepDive": "Capture versions, clocks, ordering, seeds, and side-effect boundaries before trusting replay evidence."
+    },
+    {
+      "id": "f146",
+      "branch": "capacity",
+      "prompt": "Capacity benchmark percentile",
+      "answer": "Report throughput together with latency tails, loss, correctness, and sustained duration at a controlled load.",
+      "deepDive": "A peak one-second rate is not a production capacity limit without stability and recovery evidence."
+    },
+    {
+      "id": "f147",
+      "branch": "risk",
+      "prompt": "Algorithm deployment control",
+      "answer": "A trading change requires documented testing, limits, monitoring, approval, controlled rollout, and rollback readiness.",
+      "deepDive": "The exact governance follows firm and venue procedures; operations verifies evidence rather than assuming code review is sufficient."
+    },
+    {
+      "id": "f148",
+      "branch": "risk",
+      "prompt": "Clock synchronization evidence",
+      "answer": "Source, offset, uncertainty, last successful sync, and clock-domain mapping prove whether timestamps are comparable.",
+      "deepDive": "A daemon-running status alone does not establish timestamp accuracy."
+    },
+    {
+      "id": "f149",
+      "branch": "risk",
+      "prompt": "Trading change record",
+      "answer": "A timestamped record links request, approval, version, scope, deployment, validation, rollback plan, and outcome.",
+      "deepDive": "It supports reconstruction and prevents undocumented configuration drift."
+    },
+    {
+      "id": "f150",
+      "branch": "capacity",
+      "prompt": "Failover proof",
+      "answer": "Traffic shifts to the alternate path within objectives while state, ordering, limits, positions, and downstream freshness remain correct.",
+      "deepDive": "A standby process being alive is not evidence that production failover is safe."
+    }
+  ]
+}

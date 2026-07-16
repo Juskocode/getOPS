@@ -1,0 +1,287 @@
+openapi: 3.1.0
+info:
+  title: getOPS API
+  version: 3.0.0
+  description: Revision-safe training state and authoritative written-recall scoring.
+servers:
+  - url: /api/v1
+paths:
+  /health/live:
+    get:
+      operationId: healthLive
+      responses:
+        "200":
+          description: Process is accepting HTTP requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /health/ready:
+    get:
+      operationId: healthReady
+      responses:
+        "200":
+          description: Process and PostgreSQL schema are ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          $ref: "#/components/responses/Error"
+  /catalog/flashcards:
+    get:
+      operationId: listFlashcards
+      responses:
+        "200":
+          description: Versioned written-recall catalog.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schemaVersion, generatedFrom, cards]
+                properties:
+                  schemaVersion:
+                    const: 1
+                  generatedFrom:
+                    type: string
+                  cards:
+                    type: array
+                    minItems: 150
+                    maxItems: 150
+                    items:
+                      $ref: "#/components/schemas/Flashcard"
+  /profiles/{profile}/state:
+    parameters:
+      - $ref: "#/components/parameters/Profile"
+    get:
+      operationId: getProfileState
+      responses:
+        "200":
+          description: Current state and revision.
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileState"
+        "304":
+          description: The supplied ETag is current.
+    put:
+      operationId: putProfileState
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [revision, state]
+              properties:
+                revision:
+                  type: integer
+                  minimum: 0
+                state:
+                  type: object
+                  additionalProperties: true
+      responses:
+        "200":
+          description: State committed at the next revision.
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileState"
+        "409":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+  /profiles/{profile}/export:
+    parameters:
+      - $ref: "#/components/parameters/Profile"
+    get:
+      operationId: exportProfileState
+      responses:
+        "200":
+          description: Downloadable profile state envelope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileState"
+  /profiles/{profile}/import:
+    parameters:
+      - $ref: "#/components/parameters/Profile"
+    post:
+      operationId: importProfileState
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileState"
+      responses:
+        "201":
+          description: Legacy state imported into an empty profile.
+        "409":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+  /recall/validate:
+    post:
+      operationId: validateRecall
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cardId, answer]
+              properties:
+                cardId:
+                  type: string
+                  pattern: ^f(?:0[1-9]|[1-9][0-9]|1[0-4][0-9]|150)$
+                answer:
+                  type: string
+                  minLength: 20
+                  maxLength: 1200
+      responses:
+        "200":
+          description: Authoritative deterministic rubric result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecallResult"
+        "422":
+          $ref: "#/components/responses/Error"
+components:
+  parameters:
+    Profile:
+      name: profile
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Za-z0-9_-]{1,40}$
+  responses:
+    Error:
+      description: Structured API error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        revision:
+          type: integer
+          minimum: 0
+    Health:
+      type: object
+      required: [status, service, version]
+      properties:
+        status:
+          const: ok
+        service:
+          const: getops-api
+        version:
+          type: string
+        database:
+          enum: [ready, not-checked]
+    Flashcard:
+      type: object
+      required: [id, branch, prompt, answer, deepDive]
+      properties:
+        id:
+          type: string
+        branch:
+          type: string
+        prompt:
+          type: string
+        answer:
+          type: string
+        deepDive:
+          type: string
+    ProfileState:
+      type: object
+      required: [profile, state, revision, updatedAt]
+      properties:
+        profile:
+          type: string
+        state:
+          type:
+            - object
+            - "null"
+          additionalProperties: true
+        revision:
+          type: integer
+          minimum: 0
+        updatedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+    RecallResult:
+      type: object
+      required:
+        - cardId
+        - answer
+        - rubricVersion
+        - wordCount
+        - coverageScore
+        - structureScore
+        - specificityScore
+        - score
+        - verdict
+        - resolved
+        - matched
+        - missing
+      properties:
+        cardId:
+          type: string
+        answer:
+          type: string
+        rubricVersion:
+          const: 2
+        wordCount:
+          type: integer
+        coverageScore:
+          type: integer
+          maximum: 60
+        structureScore:
+          type: integer
+          maximum: 25
+        specificityScore:
+          type: integer
+          maximum: 15
+        score:
+          type: integer
+          maximum: 100
+        verdict:
+          enum: [strong, developing, needs-work]
+        resolved:
+          type: boolean
+        matched:
+          type: array
+          items:
+            type: string
+        missing:
+          type: array
+          items:
+            type: string
