@@ -18,6 +18,7 @@
     "api:configure": "cmake -S . -B services/api/build -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug",
     "api:build": "npm run api:configure && cmake --build services/api/build --parallel",
     "api:test": "npm run api:build && ctest --test-dir services/api/build --output-on-failure",
+    "api:test:postgres": "./scripts/test-postgres.sh",
     "legacy:build": "node legacy/web/build.mjs",
     "legacy:test": "npm run legacy:build && node --test legacy/tests/test_frontend_contract.mjs legacy/tests/test_build_contract.mjs",
     "legacy:test:server": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s legacy/tests -p 'test_*.py' -v",

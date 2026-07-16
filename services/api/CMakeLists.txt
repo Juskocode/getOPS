@@ -10,6 +10,20 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
+if(APPLE)
+  execute_process(
+    COMMAND brew --prefix libpq
+    OUTPUT_VARIABLE GETOPS_LIBPQ_PREFIX
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  if(GETOPS_LIBPQ_PREFIX)
+    list(PREPEND CMAKE_PREFIX_PATH "${GETOPS_LIBPQ_PREFIX}")
+    set(PostgreSQL_ROOT "${GETOPS_LIBPQ_PREFIX}")
+  endif()
+endif()
+find_package(PostgreSQL REQUIRED)
+
 add_library(
   getops_domain
   src/catalog.cpp
@@ -34,6 +48,28 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
   )
 endif()
 
+add_library(getops_repository src/profile_repository.cpp)
+add_library(getops::repository ALIAS getops_repository)
+target_compile_features(getops_repository PUBLIC cxx_std_20)
+target_include_directories(getops_repository PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(
+  getops_repository
+  PUBLIC
+    getops::domain
+    PostgreSQL::PostgreSQL
+)
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+  target_compile_options(
+    getops_repository
+    PRIVATE
+      -Wall
+      -Wextra
+      -Wpedantic
+      -Wconversion
+      -Wshadow
+  )
+endif()
+
 if(BUILD_TESTING)
   add_executable(getops_catalog_recall_test tests/catalog_recall_test.cpp)
   target_link_libraries(getops_catalog_recall_test PRIVATE getops::domain)
@@ -47,4 +83,9 @@ if(BUILD_TESTING)
   add_executable(getops_state_validator_test tests/state_validator_test.cpp)
   target_link_libraries(getops_state_validator_test PRIVATE getops::domain)
   add_test(NAME getops.state_validator COMMAND getops_state_validator_test)
+
+  add_executable(getops_repository_integration_test tests/repository_integration_test.cpp)
+  target_link_libraries(getops_repository_integration_test PRIVATE getops::repository)
+  add_test(NAME getops.repository_integration COMMAND getops_repository_integration_test)
+  set_tests_properties(getops.repository_integration PROPERTIES SKIP_RETURN_CODE 77)
 endif()
