@@ -8,6 +8,7 @@
 #include <unordered_set>
 
 #include "getops/errors.hpp"
+#include "getops/recall.hpp"
 
 namespace getops {
 namespace {
@@ -54,9 +55,8 @@ std::string text(
 int word_count(const std::string& value) {
   int count = 0;
   bool in_word = false;
-  for (const char raw_character : value) {
-    const auto character = static_cast<unsigned char>(raw_character);
-    if (std::isalnum(character) != 0) {
+  for (const char character : value) {
+    if (std::isspace(static_cast<unsigned char>(character)) == 0) {
       if (!in_word) {
         ++count;
         in_word = true;
@@ -139,11 +139,16 @@ void validate_attempt(const nlohmann::json& attempt) {
     invalid("Flash attempt component scores do not equal the total score.");
   }
   const auto verdict = text(attempt, "verdict", 6, 10);
-  if (verdict != "strong" && verdict != "developing" && verdict != "needs-work") {
+  const auto expected_verdict =
+      score >= 80 ? "strong" : (score >= 60 ? "developing" : "needs-work");
+  if (verdict != expected_verdict) {
     invalid("Flash attempt verdict is invalid.");
   }
   if (!attempt.contains("resolved") || !attempt.at("resolved").is_boolean()) {
     invalid("Flash attempt resolved must be a boolean.");
+  }
+  if (attempt.at("resolved").get<bool>() != (score >= 75)) {
+    invalid("Flash attempt resolved does not match the score gate.");
   }
   validate_string_array(attempt, "matched");
   validate_string_array(attempt, "missing");
@@ -156,6 +161,18 @@ void validate_attempt(const nlohmann::json& attempt) {
     if (matched.contains(item.get<std::string>())) {
       invalid("Flash attempt concepts cannot be both matched and missing.");
     }
+  }
+}
+
+void compare_recall_field(
+    const nlohmann::json& attempt,
+    const nlohmann::json& expected,
+    const char* field) {
+  if (!attempt.contains(field) || attempt.at(field) != expected.at(field)) {
+    throw DomainError(
+        "state_score_invalid",
+        std::string("Flash attempt field '") + field +
+            "' does not match authoritative scoring.");
   }
 }
 
@@ -258,6 +275,39 @@ void StateValidator::validate(const nlohmann::json& state) {
       if (value.empty() || value.size() > 80 || !values.insert(value).second) {
         invalid("flashRewardClaims contains an invalid or duplicate value.");
       }
+    }
+  }
+}
+
+void StateValidator::validate_recall_evidence(
+    const nlohmann::json& state,
+    const RecallScorer& scorer) {
+  validate(state);
+  if (!state.contains("flashAttempts")) {
+    return;
+  }
+  for (const auto& attempt : state.at("flashAttempts")) {
+    if (attempt.at("rubricVersion").get<int>() != 2) {
+      continue;
+    }
+    const auto expected = nlohmann::json(scorer.validate(
+        attempt.at("cardId").get<std::string>(),
+        attempt.at("answer").get<std::string>()));
+    for (const char* field : {
+             "cardId",
+             "answer",
+             "rubricVersion",
+             "wordCount",
+             "coverageScore",
+             "structureScore",
+             "specificityScore",
+             "score",
+             "verdict",
+             "resolved",
+             "matched",
+             "missing",
+         }) {
+      compare_recall_field(attempt, expected, field);
     }
   }
 }

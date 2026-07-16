@@ -24,7 +24,7 @@ import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../../api/client";
 import { flashcards } from "../../content/catalog";
 import { branchById, branches } from "../../domain/branches";
-import { latestAttempts } from "../../state/evidence";
+import { latestAttempts, recallReward } from "../../state/evidence";
 import { useProfileState } from "../../state/profile-state";
 
 type EvidenceFilter = "all" | "unvalidated" | "validated" | "needs-review" | "strong";
@@ -158,7 +158,7 @@ export function FlashcardsPage() {
         const claims: string[] = Array.isArray(current.flashRewardClaims)
           ? current.flashRewardClaims
           : [];
-        const reward = claims.includes(rewardKey) ? 0 : 10;
+        const reward = claims.includes(rewardKey) ? 0 : recallReward(validation.score);
         return {
           ...current,
           uiVersion: 30,

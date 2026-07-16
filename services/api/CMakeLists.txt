@@ -119,6 +119,11 @@ if(BUILD_TESTING)
 
   add_executable(getops_state_validator_test tests/state_validator_test.cpp)
   target_link_libraries(getops_state_validator_test PRIVATE getops::domain)
+  target_compile_definitions(
+    getops_state_validator_test
+    PRIVATE
+      GETOPS_TEST_CATALOG="${PROJECT_SOURCE_DIR}/content/flashcards.json"
+  )
   add_test(NAME getops.state_validator COMMAND getops_state_validator_test)
 
   add_executable(getops_repository_integration_test tests/repository_integration_test.cpp)

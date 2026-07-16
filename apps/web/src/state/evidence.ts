@@ -12,6 +12,12 @@ export function latestAttempts(state: ProgressState): Map<string, FlashAttempt> 
   return latest;
 }
 
+export function recallReward(score: number): number {
+  if (score >= 80) return 10;
+  if (score >= 60) return 5;
+  return 0;
+}
+
 export function recallSummary(state: ProgressState) {
   const latest = latestAttempts(state);
   const attempts = [...latest.values()];

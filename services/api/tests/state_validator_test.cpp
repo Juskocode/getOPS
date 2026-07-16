@@ -4,7 +4,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include "getops/catalog.hpp"
 #include "getops/errors.hpp"
+#include "getops/recall.hpp"
 #include "getops/state_validator.hpp"
 
 namespace {
@@ -34,7 +36,7 @@ nlohmann::json valid_attempt() {
       {"cardId", "f01"},
       {"answer", "A quote is available interest while a trade is a completed transaction."},
       {"createdAt", "2026-07-16T10:20:30.000Z"},
-      {"rubricVersion", 2},
+      {"rubricVersion", 1},
       {"wordCount", 12},
       {"coverageScore", 40},
       {"structureScore", 20},
@@ -70,11 +72,27 @@ int main() {
   };
   getops::StateValidator::validate(state);
 
-  auto rubric_one = valid_attempt();
-  rubric_one["id"] = "flash-f01-legacy";
-  rubric_one["rubricVersion"] = 1;
-  state["flashAttempts"].push_back(rubric_one);
-  getops::StateValidator::validate(state);
+  const auto catalog = getops::Catalog::load(GETOPS_TEST_CATALOG);
+  const getops::RecallScorer scorer(catalog);
+  auto authoritative = nlohmann::json(scorer.validate(
+      "f01",
+      "A quote shows available buying or selling interest with price and size. "
+      "A trade is a completed execution at a specific price and quantity."));
+  authoritative["id"] = "flash-f01-authoritative";
+  authoritative["createdAt"] = "2026-07-16T11:20:30.000Z";
+  state["flashAttempts"].push_back(authoritative);
+  getops::StateValidator::validate_recall_evidence(state, scorer);
+
+  auto forged_evidence = state;
+  forged_evidence["flashAttempts"][1]["coverageScore"] =
+      forged_evidence["flashAttempts"][1]["coverageScore"].get<int>() - 1;
+  forged_evidence["flashAttempts"][1]["score"] =
+      forged_evidence["flashAttempts"][1]["score"].get<int>() - 1;
+  expect_domain_error(
+      [&forged_evidence, &scorer]() {
+        getops::StateValidator::validate_recall_evidence(forged_evidence, scorer);
+      },
+      "state_score_invalid");
 
   auto bad_total = state;
   bad_total["flashAttempts"][0]["score"] = 99;

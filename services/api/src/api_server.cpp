@@ -268,6 +268,7 @@ class ApiServer::Impl final {
     if (!body.contains("state") || !body.at("state").is_object()) {
       throw DomainError("state_invalid", "Request state must be a JSON object.");
     }
+    StateValidator::validate_recall_evidence(body.at("state"), scorer_);
     verify_if_match(request, profile, revision);
     const auto record = repository_.save(profile, revision, body.at("state"), id);
     response.set_header("ETag", state_etag(profile, record.revision));
@@ -422,6 +423,7 @@ class ApiServer::Impl final {
           if (!state.is_object()) {
             throw DomainError("state_invalid", "Import state must be a JSON object.");
           }
+          StateValidator::validate_recall_evidence(state, scorer_);
           const auto record = repository_.import_empty(profile, state, id);
           response.set_header("ETag", state_etag(profile, record.revision));
           json_response(response, 201, profile_payload(record));

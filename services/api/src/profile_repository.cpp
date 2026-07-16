@@ -127,6 +127,7 @@ ProfileRecord record_from_result(
     int row = 0) {
   ProfileRecord record{
       .profile = profile,
+      .state = std::nullopt,
       .revision = parse_integer(PQgetvalue(result, row, 0), "revision"),
       .updated_at = nullable_text(result, row, 2),
   };
@@ -173,7 +174,12 @@ ProfileRecord ProfileRepository::load(const std::string& profile) const {
           " FROM profile_states WHERE profile_id = $1",
       {profile});
   if (PQntuples(result.get()) == 0) {
-    return ProfileRecord{.profile = profile};
+    return ProfileRecord{
+        .profile = profile,
+        .state = std::nullopt,
+        .revision = 0,
+        .updated_at = std::nullopt,
+    };
   }
   return record_from_result(profile, result.get());
 }

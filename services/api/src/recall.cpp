@@ -68,6 +68,23 @@ std::vector<std::string> tokenize(const std::string& value) {
   return tokens;
 }
 
+int count_words(const std::string& value) {
+  int count = 0;
+  bool in_word = false;
+  for (const char raw_character : value) {
+    const auto character = static_cast<unsigned char>(raw_character);
+    if (std::isspace(character) == 0) {
+      if (!in_word) {
+        ++count;
+        in_word = true;
+      }
+    } else {
+      in_word = false;
+    }
+  }
+  return count;
+}
+
 bool equivalent_token(
     const std::unordered_set<std::string>& answer_tokens,
     const std::string& concept_token) {
@@ -147,7 +164,8 @@ RecallResult RecallScorer::validate(
   }
 
   const auto answer_token_list = tokenize(answer);
-  if (answer_token_list.size() < 4 || answer_token_list.size() > 500) {
+  const auto answer_word_count = count_words(answer);
+  if (answer_word_count < 4 || answer_word_count > 500) {
     throw DomainError("answer_invalid", "Recall answer must contain between 4 and 500 words.");
   }
   const std::unordered_set<std::string> answer_tokens(
@@ -161,7 +179,16 @@ RecallResult RecallScorer::validate(
   RecallResult result{
       .card_id = card.id,
       .answer = answer,
-      .word_count = static_cast<int>(answer_token_list.size()),
+      .rubric_version = 2,
+      .word_count = answer_word_count,
+      .coverage_score = 0,
+      .structure_score = 0,
+      .specificity_score = 0,
+      .score = 0,
+      .verdict = {},
+      .resolved = false,
+      .matched = {},
+      .missing = {},
   };
   for (const auto& concept_token : concepts) {
     if (equivalent_token(answer_tokens, concept_token)) {
