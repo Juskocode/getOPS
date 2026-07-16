@@ -5,7 +5,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 const sourceUrl = new URL('./source.fragment.html', import.meta.url);
 const cssUrl = new URL('./base.css', import.meta.url);
 const persistenceUrl = new URL('./persistence.js', import.meta.url);
-const lucideUrl = new URL('../node_modules/lucide/dist/umd/lucide.min.js', import.meta.url);
+const lucideUrl = new URL('../../node_modules/lucide/dist/umd/lucide.min.js', import.meta.url);
 const distUrl = new URL('../dist/', import.meta.url);
 const assetsUrl = new URL('../dist/assets/', import.meta.url);
 const rootOutputUrl = new URL('../index.html', import.meta.url);

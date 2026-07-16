@@ -4,9 +4,16 @@
   "description": "A persistent HFT trading-operations training workspace with evidence-based practice.",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "build": "node frontend/build.mjs",
-    "test": "npm run build && node --test tests/test_frontend_contract.mjs tests/test_build_contract.mjs",
+    "build": "npm run legacy:build",
+    "test": "npm run legacy:test",
+    "legacy:build": "node legacy/web/build.mjs",
+    "legacy:test": "npm run legacy:build && node --test legacy/tests/test_frontend_contract.mjs legacy/tests/test_build_contract.mjs",
+    "legacy:test:server": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s legacy/tests -p 'test_*.py' -v",
     "doctor": "./scripts/doctor.sh",
     "verify:release": "./scripts/verify-release.sh"
   },

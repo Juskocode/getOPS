@@ -87,7 +87,7 @@ python3 server.py \
   --host 127.0.0.1 \
   --port "$PORT" \
   --db "$TMP_DIR/release.db" \
-  --static-root dist \
+  --static-root legacy/dist \
   > "$TMP_DIR/server.log" 2>&1 &
 SERVER_PID="$!"
 

@@ -9,6 +9,12 @@ node_modules/
 dist/
 index.html
 index.html.gz
+apps/*/dist/
+packages/*/dist/
+services/*/build/
+legacy/dist/
+legacy/index.html
+legacy/index.html.gz
 coverage/
 *.log
 npm-debug.log*

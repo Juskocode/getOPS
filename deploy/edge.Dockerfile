@@ -3,14 +3,14 @@ FROM node:24-alpine AS builder
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
-COPY frontend ./frontend
+COPY legacy ./legacy
 RUN npm run build
 
 FROM nginx:1.28.3-alpine3.23
 
 COPY deploy/nginx-main.conf /etc/nginx/nginx.conf
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /build/dist /usr/share/nginx/html
+COPY --from=builder /build/legacy/dist /usr/share/nginx/html
 
 USER nginx
 EXPOSE 8080
