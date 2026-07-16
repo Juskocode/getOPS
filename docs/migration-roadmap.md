@@ -6,13 +6,13 @@ React/C++/PostgreSQL architecture defined in
 
 ## Phase 1: Platform foundation
 
-- [ ] Establish npm workspaces and explicit application/service boundaries.
-- [ ] Move the current browser and Python implementation under `legacy/`.
-- [ ] Add shared TypeScript contracts and versioned curriculum content.
-- [ ] Add React routing, error boundaries, loading states, and typed transport.
-- [ ] Add C++ configuration, HTTP routing, domain validation, and PostgreSQL RAII.
-- [ ] Add PostgreSQL migrations and revision-safe state transactions.
-- [ ] Add one-command local stack and health verification.
+- [x] Establish npm workspaces and explicit application/service boundaries.
+- [x] Move the current browser and Python implementation under `legacy/`.
+- [x] Add shared TypeScript contracts and versioned curriculum content.
+- [x] Add React routing, error boundaries, loading states, and typed transport.
+- [x] Add C++ configuration, HTTP routing, domain validation, and PostgreSQL RAII.
+- [x] Add PostgreSQL migrations and revision-safe state transactions.
+- [x] Add one-command local stack and health verification.
 
 Exit evidence:
 
@@ -24,10 +24,10 @@ Exit evidence:
 
 ## Phase 2: Core training parity
 
-- [ ] Today command center.
-- [ ] Learning branch overview and progress.
-- [ ] Written recall with server-authoritative scoring.
-- [ ] Operator profile and typed-recall evidence.
+- [x] Today command center.
+- [x] Learning branch overview and progress.
+- [x] Written recall with server-authoritative scoring.
+- [x] Operator profile and typed-recall evidence.
 - [ ] Question-bank run, elimination, explanation, and review.
 
 Exit evidence:

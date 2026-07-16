@@ -50,6 +50,18 @@ paths:
                     maxItems: 150
                     items:
                       $ref: "#/components/schemas/Flashcard"
+  /diagnostics:
+    get:
+      operationId: diagnostics
+      responses:
+        "200":
+          description: PostgreSQL schema, profile, history, and catalog diagnostics.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Diagnostics"
+        "503":
+          $ref: "#/components/responses/Error"
   /profiles/{profile}/state:
     parameters:
       - $ref: "#/components/parameters/Profile"
@@ -131,6 +143,10 @@ paths:
       responses:
         "201":
           description: Legacy state imported into an empty profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileState"
         "409":
           $ref: "#/components/responses/Error"
         "422":
@@ -204,6 +220,35 @@ components:
           type: string
         database:
           enum: [ready, not-checked]
+    Diagnostics:
+      type: object
+      required:
+        - ready
+        - serverVersion
+        - profiles
+        - historyRows
+        - schemaVersion
+        - serviceVersion
+        - catalogCards
+      properties:
+        ready:
+          const: true
+        serverVersion:
+          type: string
+        profiles:
+          type: integer
+          minimum: 0
+        historyRows:
+          type: integer
+          minimum: 0
+        schemaVersion:
+          type: integer
+          minimum: 1
+        serviceVersion:
+          type: string
+        catalogCards:
+          type: integer
+          minimum: 150
     Flashcard:
       type: object
       required: [id, branch, prompt, answer, deepDive]
