@@ -9,7 +9,7 @@ step() {
 }
 
 step "Toolchain"
-for command_name in git node npm python3; do
+for command_name in cmake git node npm python3; do
   command -v "$command_name" >/dev/null 2>&1 || {
     printf 'Missing required command: %s\n' "$command_name" >&2
     exit 1
@@ -21,7 +21,10 @@ if [ "$node_major" -lt 22 ]; then
   printf 'Node.js 22 or newer is required; found %s\n' "$(node --version)" >&2
   exit 1
 fi
-printf 'Node %s | %s\n' "$(node --version)" "$(python3 --version)"
+printf 'Node %s | %s | %s\n' \
+  "$(node --version)" \
+  "$(python3 --version)" \
+  "$(cmake --version | head -n 1)"
 
 step "Repository hygiene"
 tracked_runtime="$(git ls-files 'data/*' 'dist/*' 'legacy/dist/*' 'apps/*/dist/*' 'services/*/build/*' 'node_modules/*' 'index.html' 'index.html.gz' | grep -v '^data/.gitkeep$' || true)"
@@ -50,9 +53,9 @@ node -e '
 step "Backend and persistence contracts"
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s legacy/tests -p 'test_*.py' -v
 
-if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+if command -v docker >/dev/null 2>&1 && "$ROOT_DIR/scripts/compose.sh" version >/dev/null 2>&1; then
   step "Compose model"
-  docker compose config -q
+  "$ROOT_DIR/scripts/compose.sh" config -q
 else
   printf '\nDocker Compose unavailable; skipped container model validation.\n'
 fi

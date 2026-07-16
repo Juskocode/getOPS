@@ -1,3 +1,4 @@
+# Transitional image for the retired Python/SQLite origin.
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

@@ -11,6 +11,12 @@ const assetsUrl = new URL('../dist/assets/', import.meta.url);
 const rootOutputUrl = new URL('../index.html', import.meta.url);
 const distOutputUrl = new URL('../dist/index.html', import.meta.url);
 const CACHE_SCHEMA = '2';
+const configuredBase = String(process.env.LEGACY_BASE_PATH || '').trim();
+const basePath = configuredBase
+  ? `/${configuredBase.replace(/^\/+|\/+$/g, '')}`
+  : '';
+const serviceWorkerScope = basePath ? `${basePath}/` : '/';
+const appShellRoot = serviceWorkerScope;
 
 const [fragment, baseCss, persistence, lucide] = await Promise.all([
   readFile(sourceUrl, 'utf8'),
@@ -36,7 +42,7 @@ const appJs = [
   lucide,
   scriptMatches[0][1],
   `if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js', { scope: '/' }).catch(() => {}), { once: true });
+    addEventListener('load', () => navigator.serviceWorker.register('${basePath}/service-worker.js', { scope: '${serviceWorkerScope}' }).catch(() => {}), { once: true });
   }`,
 ].join('\n');
 
@@ -78,9 +84,9 @@ function documentFor(rootDocument = false) {
   ].join('\n');
 }
 
-const sameOriginAssets = [`/assets/${cssName}`, `/assets/${jsName}`];
+const sameOriginAssets = [`${basePath}/assets/${cssName}`, `${basePath}/assets/${jsName}`];
 const serviceWorker = `const CACHE = 'trading-ops-${release}';
-const APP_SHELL = ['/', '/index.html', ...${JSON.stringify(sameOriginAssets)}];
+const APP_SHELL = ['${appShellRoot}', '${basePath}/index.html', ...${JSON.stringify(sameOriginAssets)}];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
@@ -97,12 +103,12 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(event.request).then(response => {
       if (!response.ok) throw new Error('Navigation failed');
       const copy = response.clone();
-      caches.open(CACHE).then(cache => cache.put('/index.html', copy));
+      caches.open(CACHE).then(cache => cache.put('${basePath}/index.html', copy));
       return response;
-    }).catch(() => caches.match('/index.html')));
+    }).catch(() => caches.match('${basePath}/index.html')));
     return;
   }
-  if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
+  if (url.origin === self.location.origin && url.pathname.startsWith('${basePath}/assets/')) {
     event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
       if (!response.ok) throw new Error('Asset request failed');
       const copy = response.clone();

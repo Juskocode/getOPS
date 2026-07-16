@@ -1,18 +1,65 @@
 name: trading-ops-ascent
 
 services:
-  origin:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: getops
+      POSTGRES_PASSWORD: ${GETOPS_DB_PASSWORD:-getops-local-only}
+      POSTGRES_DB: getops
+    volumes:
+      - getops-postgres:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${GETOPS_DB_PORT:-55432}:5432"
+    shm_size: 128m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U getops -d getops"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  migrate:
+    image: postgres:17-alpine
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${GETOPS_DB_PASSWORD:-getops-local-only}
+    volumes:
+      - ./db/migrations:/migrations:ro
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        for file in /migrations/*.sql; do
+          echo "Applying $${file}"
+          psql --set ON_ERROR_STOP=1 \
+            --host db --username getops --dbname getops \
+            --file "$${file}"
+        done
+
+  api:
     build:
       context: .
-      dockerfile: deploy/backend.Dockerfile
+      dockerfile: deploy/api.Dockerfile
     restart: unless-stopped
     init: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     environment:
-      OPS_DB_PATH: /data/trading_ops_ascent.db
-      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-2}
-      GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
-    volumes:
-      - ascent-data:/data
+      GETOPS_BIND: 0.0.0.0
+      GETOPS_PORT: 8780
+      GETOPS_WORKERS: ${GETOPS_WORKERS:-8}
+      GETOPS_DATABASE_URL: "host=db port=5432 dbname=getops user=getops password=${GETOPS_DB_PASSWORD:-getops-local-only}"
+      GETOPS_CATALOG_PATH: /app/content/flashcards.json
     read_only: true
     tmpfs:
       - /tmp:size=16m,mode=1777
@@ -23,10 +70,10 @@ services:
     pids_limit: 128
     mem_limit: 384m
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8766/api/health/ready', timeout=2).read()"]
-      interval: 15s
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8780/api/v1/health/ready"]
+      interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 6
       start_period: 5s
     logging:
       driver: json-file
@@ -41,7 +88,7 @@ services:
     restart: unless-stopped
     init: true
     depends_on:
-      origin:
+      api:
         condition: service_healthy
     ports:
       - "${OPS_BIND:-127.0.0.1}:${OPS_PORT:-8766}:8080"
@@ -55,10 +102,10 @@ services:
     pids_limit: 64
     mem_limit: 128m
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/api/health/live"]
-      interval: 15s
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/api/v1/health/live"]
+      interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 6
       start_period: 5s
     logging:
       driver: json-file
@@ -67,4 +114,4 @@ services:
         max-file: "3"
 
 volumes:
-  ascent-data:
+  getops-postgres:

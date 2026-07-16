@@ -1,6 +1,6 @@
 {
   "name": "getops",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "A persistent HFT trading-operations training workspace with evidence-based practice.",
   "private": true,
   "type": "module",
@@ -23,6 +23,7 @@
     "legacy:build": "node legacy/web/build.mjs",
     "legacy:test": "npm run legacy:build && node --test legacy/tests/test_frontend_contract.mjs legacy/tests/test_build_contract.mjs",
     "legacy:test:server": "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s legacy/tests -p 'test_*.py' -v",
+    "legacy:import": "./scripts/import-legacy.sh",
     "content:extract": "node scripts/extract-legacy-content.mjs",
     "contracts:build": "npm run build --workspace @getops/contracts",
     "contracts:typecheck": "npm run typecheck --workspace @getops/contracts",

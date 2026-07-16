@@ -29,5 +29,6 @@ __pycache__/
 
 data/**
 !data/.gitkeep
+backups/
 *.db
 *.db-*
