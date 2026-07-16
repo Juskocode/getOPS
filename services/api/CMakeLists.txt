@@ -10,6 +10,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
+set(HTTPLIB_INSTALL OFF CACHE INTERNAL "")
+set(HTTPLIB_TEST OFF CACHE INTERNAL "")
+FetchContent_Declare(
+  cpp_httplib
+  GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+  GIT_TAG v0.50.1
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(cpp_httplib)
+
 if(APPLE)
   execute_process(
     COMMAND brew --prefix libpq
@@ -61,6 +71,33 @@ target_link_libraries(
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
   target_compile_options(
     getops_repository
+    PRIVATE
+      -Wall
+      -Wextra
+      -Wpedantic
+      -Wconversion
+      -Wshadow
+  )
+endif()
+
+add_executable(
+  getops_api
+  src/api_server.cpp
+  src/config.cpp
+  src/main.cpp
+)
+target_compile_features(getops_api PRIVATE cxx_std_20)
+target_include_directories(getops_api PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(
+  getops_api
+  PRIVATE
+    getops::repository
+    httplib::httplib
+)
+target_compile_definitions(getops_api PRIVATE GETOPS_VERSION="${PROJECT_VERSION}")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+  target_compile_options(
+    getops_api
     PRIVATE
       -Wall
       -Wextra
