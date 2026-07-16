@@ -1,4 +1,9 @@
-# Repository architecture
+# Legacy repository architecture
+
+This document describes the v2 local-first implementation. The accepted target
+architecture and migration order are defined in
+[ADR 0001](adr/0001-client-server-migration.md) and
+[the migration roadmap](migration-roadmap.md).
 
 getOPS is a local-first web application with one generated frontend release and one revision-safe Python origin.
 
