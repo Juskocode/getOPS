@@ -4,9 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "contracts:build": "npm run build --workspace @getops/contracts",
+    "prebuild": "npm run contracts:build",
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "tsc -b && vite build",
+    "pretypecheck": "npm run contracts:build",
     "typecheck": "tsc -b --pretty false",
+    "pretest": "npm run contracts:build",
     "test": "vitest run"
   },
   "dependencies": {
