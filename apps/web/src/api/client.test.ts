@@ -110,4 +110,38 @@ describe("GetOpsApiClient", () => {
       message: "Expected revision 8 but current revision is 9.",
     });
   });
+
+  it("derives If-Match from the submitted revision instead of a stale cached ETag", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          profile: "local",
+          state: emptyState,
+          revision: 9,
+          updatedAt: "2026-07-16T10:20:31.000Z",
+        },
+        { headers: { ETag: "\"state-local-r9\"" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new GetOpsApiClient().saveProfile(
+      {
+        profile: "local",
+        state: emptyState,
+        revision: 8,
+        updatedAt: "2026-07-16T10:20:30.000Z",
+        etag: "\"state-local-r7\"",
+        transport: "v3",
+      },
+      emptyState,
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/profiles/local/state",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "If-Match": "\"state-local-r8\"" }),
+      }),
+    );
+  });
 });

@@ -56,13 +56,13 @@ export function ProfilePage() {
             type="button"
             className="button button-primary"
             disabled={isSaving}
-            onClick={() =>
+            onClick={() => {
               void save((current) => ({
                 ...current,
                 displayName: name.trim() || "Operator",
                 profileObjective: objective.trim(),
-              }))
-            }
+              })).catch(() => undefined);
+            }}
           >
             <Save size={17} /> Save profile
           </button>

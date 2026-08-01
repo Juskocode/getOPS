@@ -2007,6 +2007,11 @@ textarea {
   font-size: 11px;
 }
 
+.runtime-detail > div > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .rank-ladder {
   margin-top: 24px;
   padding-block: 22px;
@@ -2520,6 +2525,35 @@ textarea {
     grid-template-columns: repeat(3, minmax(150px, 1fr));
   }
 
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .identity-panel {
+    position: static;
+    grid-template-columns: 72px minmax(0, 1fr) minmax(250px, 0.8fr);
+    align-items: start;
+    column-gap: 18px;
+  }
+
+  .identity-mark {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .identity-rank {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .identity-panel > label,
+  .identity-panel > .button {
+    grid-column: 3;
+  }
+
   .scenario-workspace {
     grid-template-columns: 270px minmax(0, 1fr);
   }
@@ -2535,6 +2569,19 @@ textarea {
 
   .scenario-decision > div:last-child {
     border-bottom: 0;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .product-bar {
+    position: sticky;
+    top: 0;
+  }
+
+  .side-rail {
+    position: sticky;
+    top: 72px;
+    z-index: 19;
   }
 }
 
@@ -2685,6 +2732,20 @@ textarea {
 
   .identity-panel {
     position: static;
+    grid-template-columns: 1fr;
+  }
+
+  .identity-mark,
+  .identity-rank,
+  .identity-panel > label,
+  .identity-panel > .button {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .identity-rank {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
   }
 
   .runtime-detail {

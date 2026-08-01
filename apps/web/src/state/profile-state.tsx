@@ -33,13 +33,46 @@ const initialState: ProgressState = {
   flashRewardClaims: [],
 };
 
-function normalizeProfile(record: LoadedProfile): LoadedProfile {
+type ReadyProfile = LoadedProfile & { state: ProgressState };
+
+function normalizeProfile(record: LoadedProfile): ReadyProfile {
   const state = progressStateSchema.parse({
     ...initialState,
     ...(record.state ?? {}),
     uiVersion: Math.max(30, Number(record.state?.uiVersion ?? 0)),
   });
   return { ...record, state };
+}
+
+type ProfilePersistence = Pick<typeof apiClient, "loadProfile" | "saveProfile">;
+
+export function isRevisionRace(error: unknown): boolean {
+  return error instanceof GetOpsApiError && (
+    error.status === 409 ||
+    error.status === 412 ||
+    error.payload?.error === "revision_conflict" ||
+    error.payload?.error === "if_match_invalid"
+  );
+}
+
+export async function saveProfileUpdate(
+  current: LoadedProfile,
+  update: (state: ProgressState) => ProgressState,
+  persistence: ProfilePersistence = apiClient,
+): Promise<LoadedProfile> {
+  let candidate = normalizeProfile(current);
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const next = progressStateSchema.parse(update(candidate.state));
+    try {
+      return normalizeProfile(await persistence.saveProfile(candidate, next));
+    } catch (error) {
+      if (attempt > 0 || !isRevisionRace(error)) throw error;
+      candidate = normalizeProfile(await persistence.loadProfile(candidate.profile));
+    }
+  }
+
+  throw new Error("Profile synchronization could not be completed.");
 }
 
 interface ProfileStateContextValue {
@@ -75,16 +108,23 @@ export function ProfileStateProvider({ children }: PropsWithChildren) {
           setIsSaving(true);
           setLastError("");
           try {
-            const next = progressStateSchema.parse(update(current.state));
-            const saved = normalizeProfile(await apiClient.saveProfile(current, next));
+            const saved = await saveProfileUpdate(current, update);
             queryClient.setQueryData(PROFILE_QUERY_KEY, saved);
             return saved;
           } catch (error) {
-            if (error instanceof GetOpsApiError && error.status === 409) {
+            if (isRevisionRace(error)) {
               await queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
-              setLastError("A newer profile revision was loaded. Reapply the change.");
+              const message = "Progress changed in another tab. The latest version is loaded; try once more.";
+              setLastError(message);
+              throw new Error(message);
             } else {
-              setLastError(error instanceof Error ? error.message : "Profile save failed.");
+              setLastError(
+                error instanceof GetOpsApiError
+                  ? "Progress could not be synchronized. Your input is still on screen; try again."
+                  : error instanceof Error
+                    ? error.message
+                    : "Profile save failed.",
+              );
             }
             throw error;
           } finally {

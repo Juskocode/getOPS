@@ -34,6 +34,20 @@ export function AppShell() {
     refetchInterval: 30_000,
     retry: 1,
   });
+  const apiLabel = health.isPending
+    ? "Checking API"
+    : health.isError
+      ? "API unavailable"
+      : health.data?.version === "legacy"
+        ? "Legacy API"
+        : "C++ API";
+  const databaseLabel = health.isPending
+    ? "Checking DB"
+    : health.isError
+      ? "DB unavailable"
+      : health.data?.database === "ready"
+        ? "PostgreSQL"
+        : "Transition";
 
   useEffect(() => {
     globalThis.scrollTo({ top: 0, behavior: "auto" });
@@ -52,13 +66,13 @@ export function AppShell() {
           </span>
         </div>
         <div className="runtime-strip" aria-label="Runtime status">
-          <span data-tone={health.isSuccess ? "healthy" : "warning"}>
+          <span data-tone={health.isSuccess ? "healthy" : health.isError ? "warning" : "neutral"}>
             <Server size={15} />
-            {health.data?.version === "legacy" ? "Legacy API" : "C++ API"}
+            {apiLabel}
           </span>
-          <span data-tone={health.data?.database === "ready" ? "healthy" : "neutral"}>
+          <span data-tone={health.data?.database === "ready" ? "healthy" : health.isError ? "warning" : "neutral"}>
             <Database size={15} />
-            {health.data?.database === "ready" ? "PostgreSQL" : "Transition"}
+            {databaseLabel}
           </span>
           <NavLink className="profile-link" to="/profile">
             <CircleUserRound size={17} />

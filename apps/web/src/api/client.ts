@@ -3,6 +3,7 @@ import {
   healthResponseSchema,
   profileStateResponseSchema,
   recallValidationResponseSchema,
+  stateEtag,
   type ApiError,
   type HealthResponse,
   type ProfileStateResponse,
@@ -77,7 +78,11 @@ function normalizeLegacyProfile(payload: unknown, etag: string): LoadedProfile {
     revision: candidate.revision,
     updatedAt: candidate.updatedAt ?? candidate.updated_at ?? null,
   });
-  return { ...parsed, etag, transport: "legacy" };
+  return {
+    ...parsed,
+    etag: etag || stateEtag(parsed.profile, parsed.revision),
+    transport: "legacy",
+  };
 }
 
 export class GetOpsApiClient {
@@ -109,7 +114,7 @@ export class GetOpsApiClient {
       const parsed = profileStateResponseSchema.parse(payload);
       return {
         ...parsed,
-        etag: response.headers.get("ETag") ?? "",
+        etag: response.headers.get("ETag") ?? stateEtag(parsed.profile, parsed.revision),
         transport: "v3",
       };
     } catch (error) {
@@ -131,11 +136,12 @@ export class GetOpsApiClient {
       current.transport === "v3"
         ? { revision: current.revision, state }
         : { profile: current.profile, revision: current.revision, state };
+    const ifMatch = stateEtag(current.profile, current.revision);
     const { response, payload } = await fetchJson(path, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        ...(current.etag ? { "If-Match": current.etag } : {}),
+        "If-Match": ifMatch,
       },
       body: JSON.stringify(body),
     });
@@ -145,7 +151,7 @@ export class GetOpsApiClient {
     const parsed = profileStateResponseSchema.parse(payload);
     return {
       ...parsed,
-      etag: response.headers.get("ETag") ?? "",
+      etag: response.headers.get("ETag") ?? stateEtag(parsed.profile, parsed.revision),
       transport: "v3",
     };
   }

@@ -95,7 +95,7 @@ export function FlashcardsPage() {
             updatedAt: new Date().toISOString(),
           },
         },
-      }));
+      })).catch(() => undefined);
     }, 700);
     return () => {
       if (draftTimer.current) globalThis.clearTimeout(draftTimer.current);
@@ -167,7 +167,7 @@ export function FlashcardsPage() {
     void save((current) => ({
       ...current,
       flashRecent: [card.id, ...(current.flashRecent ?? []).filter((id) => id !== card.id)].slice(0, 6),
-    }));
+    })).catch(() => undefined);
     selectCard(next.id);
   }
 
@@ -202,7 +202,11 @@ export function FlashcardsPage() {
       });
       setResult(validation);
     } catch (error) {
-      setValidationError(error instanceof Error ? error.message : "Recall validation failed.");
+      setValidationError(
+        error instanceof Error && error.message.startsWith("Progress changed")
+          ? error.message
+          : "Validation could not be completed. Your answer remains on screen; try again.",
+      );
     }
   }
 
