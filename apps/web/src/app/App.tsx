@@ -25,6 +25,13 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <TodayPage /> },
       { path: "learn", element: <LearnPage /> },
+      {
+        path: "learn/:branchId",
+        lazy: async () => {
+          const { DeepDivePage } = await import("../features/learn/DeepDivePage");
+          return { Component: DeepDivePage };
+        },
+      },
       { path: "practice", element: <Navigate to="/practice/flashcards" replace /> },
       { path: "practice/flashcards", element: <FlashcardsPage /> },
       { path: "simulate", element: <SimulatePage /> },
