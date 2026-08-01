@@ -17,8 +17,9 @@ flowchart LR
     Export["Legacy JSON export"] -->|empty-profile import| API
 ```
 
-The primary application owns Today, Learn, written recall, and the operator
-profile. The deeper question bank, incident labs, telemetry triage, Shift Desk,
+The primary application owns Today, the staged learning path, nine operator
+deep dives, written recall, six native telemetry briefings, and the operator
+profile. The scored pressure engine, broader question bank, Shift Desk,
 Interview Studio, repair cycles, and retention ladders remain available at
 `/legacy/` while their contracts are ported. New product work belongs in React
 or C++; the fallback is a migration source, not a second implementation target.

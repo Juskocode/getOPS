@@ -7,7 +7,7 @@ import {
   Route,
 } from "lucide-react";
 import { useMemo, type CSSProperties } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 
 import { flashcards } from "../../content/catalog";
 import { branchById, branches } from "../../domain/branches";

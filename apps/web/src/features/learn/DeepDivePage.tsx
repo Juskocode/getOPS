@@ -11,7 +11,7 @@ import {
   Timer,
 } from "lucide-react";
 import { useMemo, type CSSProperties } from "react";
-import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router";
 
 import { flashcards } from "../../content/catalog";
 import { branchById } from "../../domain/branches";

@@ -5,11 +5,14 @@ import type {
 } from "@getops/contracts";
 import {
   ArrowRight,
+  BookOpenCheck,
   CheckCircle2,
+  CircleDot,
   Eye,
   Filter,
   RefreshCw,
   Save,
+  Search,
   Shuffle,
 } from "lucide-react";
 import {
@@ -19,7 +22,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 
 import { apiClient } from "../../api/client";
 import { flashcards } from "../../content/catalog";
@@ -43,11 +46,16 @@ export function FlashcardsPage() {
     : "all";
   const [branchFilter, setBranchFilter] = useState<BranchId | "all">(initialBranch);
   const [evidenceFilter, setEvidenceFilter] = useState<EvidenceFilter>("all");
+  const [query, setQuery] = useState("");
   const latest = useMemo(() => latestAttempts(state), [state]);
   const filtered = useMemo(
     () =>
       flashcards.filter((card) => {
         if (branchFilter !== "all" && card.branch !== branchFilter) return false;
+        if (
+          query.trim() &&
+          !`${card.prompt} ${card.answer}`.toLowerCase().includes(query.trim().toLowerCase())
+        ) return false;
         const attempt = latest.get(card.id);
         if (evidenceFilter === "unvalidated") return !attempt;
         if (evidenceFilter === "validated") return Boolean(attempt);
@@ -55,11 +63,11 @@ export function FlashcardsPage() {
         if (evidenceFilter === "strong") return Boolean(attempt && attempt.score >= 80);
         return true;
       }),
-    [branchFilter, evidenceFilter, latest],
+    [branchFilter, evidenceFilter, latest, query],
   );
   const preferredId = searchParams.get("card") || state.flashActiveId || filtered[0]?.id;
   const activeIndex = Math.max(0, filtered.findIndex((card) => card.id === preferredId));
-  const activeCard = filtered[activeIndex] ?? filtered[0] ?? flashcards[0];
+  const activeCard = filtered[activeIndex] ?? filtered[0];
   const savedDraft = activeCard ? state.flashDrafts?.[activeCard.id]?.text ?? "" : "";
   const [answer, setAnswer] = useState(savedDraft);
   const [result, setResult] = useState<RecallValidationResponse | null>(null);
@@ -100,7 +108,17 @@ export function FlashcardsPage() {
         <div className="empty-state">
           <Filter size={24} />
           <strong>No cards match these filters</strong>
-          <button type="button" onClick={() => setEvidenceFilter("all")}>Reset evidence</button>
+          <button
+            type="button"
+            onClick={() => {
+              setBranchFilter("all");
+              setEvidenceFilter("all");
+              setQuery("");
+              setSearchParams({});
+            }}
+          >
+            Reset filters
+          </button>
         </div>
       </div>
     );
@@ -124,6 +142,19 @@ export function FlashcardsPage() {
 
   function nextCard() {
     const next = filtered[(activeIndex + 1) % filtered.length];
+    if (next) selectCard(next.id);
+  }
+
+  function nextPriorityCard() {
+    const remaining = filtered.filter((candidate) => candidate.id !== card.id);
+    const unvalidated = remaining.find((candidate) => !latest.has(candidate.id));
+    const weakest = [...remaining]
+      .filter((candidate) => latest.has(candidate.id))
+      .sort(
+        (left, right) =>
+          (latest.get(left.id)?.score ?? 101) - (latest.get(right.id)?.score ?? 101),
+      )[0];
+    const next = unvalidated ?? weakest ?? remaining[0];
     if (next) selectCard(next.id);
   }
 
@@ -183,10 +214,23 @@ export function FlashcardsPage() {
           <h1>Recall deck</h1>
           <p>{flashcards.length} operations cards with server-authoritative evidence.</p>
         </div>
-        <div className="header-counter">{filtered.length} IN VIEW</div>
+        <div className="header-counter">
+          {filtered.filter((item) => latest.has(item.id)).length} / {filtered.length} EVIDENCED
+        </div>
       </header>
 
       <section className="filter-bar" aria-label="Flashcard filters">
+        <label className="filter-search">
+          Find a card
+          <span>
+            <Search size={15} />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value.slice(0, 80))}
+              placeholder="Sequence, latency, rejects..."
+            />
+          </span>
+        </label>
         <label>
           Branch
           <select
@@ -222,6 +266,7 @@ export function FlashcardsPage() {
           onClick={() => {
             setBranchFilter("all");
             setEvidenceFilter("all");
+            setQuery("");
             setSearchParams({});
           }}
         >
@@ -232,17 +277,24 @@ export function FlashcardsPage() {
       <div className="recall-layout">
         <section className="recall-editor">
           <header>
-            <div>
+            <div className="recall-context-row">
               <span
                 className="branch-badge"
                 style={{ "--branch-color": branchById.get(card.branch)?.color } as CSSProperties}
               >
                 {branchById.get(card.branch)?.shortName ?? card.branch}
               </span>
+              <span className="card-evidence-status">
+                {latest.has(card.id) ? <CheckCircle2 size={13} /> : <CircleDot size={13} />}
+                {latest.has(card.id) ? `${latest.get(card.id)?.score}% latest` : "Unvalidated"}
+              </span>
               <span>{activeIndex + 1} / {filtered.length}</span>
             </div>
             <h2>{card.prompt}</h2>
             <p>Write the decision and operational evidence you would say aloud.</p>
+            <div className="recall-position" aria-label={`Card ${activeIndex + 1} of ${filtered.length}`}>
+              <span style={{ width: `${((activeIndex + 1) / filtered.length) * 100}%` }} />
+            </div>
           </header>
 
           <label className="answer-field">
@@ -286,6 +338,15 @@ export function FlashcardsPage() {
                   {result.missing.map((item) => <span key={item}>{item}</span>)}
                 </div>
               </div>
+              <div className="validation-next-actions">
+                <span>Evidence recorded. Strengthen missing concepts or continue the filtered run.</span>
+                <Link className="button" to={`/learn/${card.branch}`}>
+                  <BookOpenCheck size={16} /> Review guide
+                </Link>
+                <button type="button" className="button button-primary" onClick={nextPriorityCard}>
+                  Next priority <ArrowRight size={16} />
+                </button>
+              </div>
             </section>
           ) : null}
 
@@ -307,7 +368,12 @@ export function FlashcardsPage() {
               <CheckCircle2 size={17} />
               {result ? "Validate revision" : "Validate response"}
             </button>
-            <button type="button" className="button" onClick={() => setRevealed(true)}>
+            <button
+              type="button"
+              className="button"
+              disabled={answer.trim().length < 20}
+              onClick={() => setRevealed(true)}
+            >
               <Eye size={17} /> Reveal reference
             </button>
             <span />
@@ -321,6 +387,18 @@ export function FlashcardsPage() {
         </section>
 
         <aside className="attempt-panel">
+          <section className="recall-branch-context">
+            <span
+              className="branch-badge"
+              style={{ "--branch-color": branchById.get(card.branch)?.color } as CSSProperties}
+            >
+              {branchById.get(card.branch)?.name ?? card.branch}
+            </span>
+            <p>{branchById.get(card.branch)?.description}</p>
+            <Link to={`/learn/${card.branch}`}>
+              <BookOpenCheck size={15} /> Open deep dive <ArrowRight size={14} />
+            </Link>
+          </section>
           <div className="section-heading">
             <div>
               <span className="eyebrow">EVIDENCE</span>

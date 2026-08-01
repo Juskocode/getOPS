@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom";
+import { Navigate, RouterProvider, createBrowserRouter } from "react-router";
 
 import { FlashcardsPage } from "../features/flashcards/FlashcardsPage";
 import { LearnPage } from "../features/learn/LearnPage";

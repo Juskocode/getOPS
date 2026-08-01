@@ -22,6 +22,17 @@ versioning for the application contract, persistence model, and release process.
 - Added real PostgreSQL conflict, concurrent writer, import/export, and
   socket-level API integration gates.
 
+### Training Experience
+
+- Rebuilt Learn as a five-stage command path with nine branch-level deep dives,
+  signal paths, operator runbooks, failure comparisons, and interview checks.
+- Added a native scenario desk with six telemetry briefings spanning market
+  data, sessions, capacity, order state, and risk-control incidents.
+- Added branch-aware recall search and evidence filters, explicit review and
+  next actions, operator grades, readiness cues, and responsive mobile
+  navigation.
+- Moved browser routing to the patched React Router 8.3 package.
+
 ### Deployment
 
 - Added a four-service PostgreSQL, migration, C++ API, and Nginx Compose stack.

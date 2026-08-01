@@ -9,9 +9,11 @@ import {
   RadioTower,
   Server,
 } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { NavLink, Outlet, useLocation } from "react-router";
 
 import { apiClient } from "../api/client";
+import { rankProgress } from "../domain/ranks";
 import { useProfileState } from "../state/profile-state";
 
 const navigation = [
@@ -24,12 +26,18 @@ const navigation = [
 
 export function AppShell() {
   const { state, record, isSaving, lastError, clearError } = useProfileState();
+  const location = useLocation();
+  const rank = rankProgress(Number(state.xp ?? 0));
   const health = useQuery({
     queryKey: ["health"],
     queryFn: () => apiClient.health(),
     refetchInterval: 30_000,
     retry: 1,
   });
+
+  useEffect(() => {
+    globalThis.scrollTo({ top: 0, behavior: "auto" });
+  }, [location.pathname]);
 
   return (
     <div className="app-frame">
@@ -61,9 +69,11 @@ export function AppShell() {
 
       <aside className="side-rail">
         <div className="rank-block">
-          <span>RANK SIGNAL</span>
-          <strong>{Number(state.xp ?? 0).toLocaleString()} XP</strong>
-          <small>Profile revision {record.revision}</small>
+          <span>OPERATOR GRADE</span>
+          <strong>{rank.current.name}</strong>
+          <small>Rank {rank.rankNumber} of {rank.totalRanks} · {rank.xp.toLocaleString()} XP</small>
+          <div className="rank-progress"><span style={{ width: `${rank.progress}%` }} /></div>
+          <small>{rank.next ? `${rank.xpToNext} XP to ${rank.next.name}` : "Maximum grade reached"}</small>
         </div>
         <nav aria-label="Primary navigation">
           {navigation.map(({ to, label, icon: Icon, end }) => (
