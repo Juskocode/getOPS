@@ -4,6 +4,7 @@ import {
   BookOpen,
   CircleUserRound,
   Database,
+  FlaskConical,
   GraduationCap,
   Layers3,
   RadioTower,
@@ -22,6 +23,7 @@ const navigation = [
   { to: "/learn", label: "Learn", icon: BookOpen },
   { to: "/practice/flashcards", label: "Practice", icon: Layers3 },
   { to: "/simulate", label: "Simulate", icon: RadioTower },
+  { to: "/lab/galton", label: "Lab", icon: FlaskConical },
   { to: "/profile", label: "Progress", icon: GraduationCap },
 ];
 

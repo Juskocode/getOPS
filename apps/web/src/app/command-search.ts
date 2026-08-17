@@ -1,6 +1,7 @@
 import {
   Activity,
   BookOpen,
+  FlaskConical,
   GraduationCap,
   Layers3,
   RadioTower,
@@ -70,6 +71,16 @@ const destinationCommands: WorkspaceCommand[] = [
     to: "/profile",
     icon: GraduationCap,
     searchText: "profile progress rank xp evidence coverage operator",
+  },
+  {
+    id: "destination-galton",
+    kind: "destination",
+    label: "Galton probability field",
+    meta: "Stochastic lab",
+    to: "/lab/galton",
+    icon: FlaskConical,
+    color: "#f1ca61",
+    searchText: "galton board probability distribution binomial balls stochastic simulation lab equation",
   },
 ];
 

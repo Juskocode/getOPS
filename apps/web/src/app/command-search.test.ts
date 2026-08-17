@@ -22,4 +22,13 @@ describe("searchWorkspaceCommands", () => {
     const results = searchWorkspaceCommands("sequence gap");
     expect(results.some((result) => result.kind === "recall" && result.to.includes("/practice/flashcards"))).toBe(true);
   });
+
+  it("opens the stochastic Galton lab from probability searches", () => {
+    const [result] = searchWorkspaceCommands("galton probability");
+    expect(result).toMatchObject({
+      kind: "destination",
+      label: "Galton probability field",
+      to: "/lab/galton",
+    });
+  });
 });

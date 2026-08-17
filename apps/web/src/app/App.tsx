@@ -35,6 +35,13 @@ const router = createBrowserRouter([
       { path: "practice", element: <Navigate to="/practice/flashcards" replace /> },
       { path: "practice/flashcards", element: <FlashcardsPage /> },
       { path: "simulate", element: <SimulatePage /> },
+      {
+        path: "lab/galton",
+        lazy: async () => {
+          const { GaltonLabPage } = await import("../features/galton/GaltonLabPage");
+          return { Component: GaltonLabPage };
+        },
+      },
       { path: "profile", element: <ProfilePage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

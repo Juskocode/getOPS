@@ -2734,6 +2734,465 @@ textarea {
   color: var(--blue);
 }
 
+.galton-page-header {
+  align-items: center;
+}
+
+.galton-header-signal {
+  min-width: 180px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 12px 14px;
+  border: 1px solid #6a5428;
+  border-radius: 7px;
+  background: #1c1810;
+}
+
+.galton-header-signal > span {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--amber);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.galton-header-signal strong {
+  color: #ffe7a2;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.galton-header-signal small {
+  align-self: end;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.galton-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  align-items: start;
+  gap: 18px;
+}
+
+.galton-board-panel,
+.galton-controls,
+.galton-bin-tape {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.galton-board-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.galton-board-toolbar {
+  min-height: 70px;
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #111412;
+}
+
+.galton-run-state {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.galton-run-state > span {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--muted);
+  box-shadow: 0 0 0 5px rgba(156, 165, 159, 0.08);
+}
+
+.galton-run-state[data-state="running"] > span {
+  background: var(--amber);
+  box-shadow: 0 0 0 5px rgba(241, 202, 97, 0.09);
+  animation: galton-run-pulse 1.2s ease-in-out infinite;
+}
+
+.galton-run-state[data-state="complete"] > span {
+  background: var(--green);
+  box-shadow: 0 0 0 5px rgba(99, 214, 160, 0.09);
+}
+
+.galton-run-state > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galton-run-state strong,
+.galton-run-state small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galton-run-state small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.galton-speed {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #0d0f0e;
+}
+
+.galton-speed button {
+  min-height: 32px;
+  gap: 5px;
+  padding: 0 9px;
+  color: var(--muted);
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+}
+
+.galton-speed button[aria-pressed="true"] {
+  color: #19140a;
+  background: var(--amber);
+}
+
+.galton-playback {
+  display: flex;
+  gap: 7px;
+}
+
+.galton-canvas-wrap {
+  position: relative;
+  min-height: 560px;
+  background: #0c0f0e;
+}
+
+.galton-canvas {
+  width: 100%;
+  height: clamp(560px, 63vh, 720px);
+  display: block;
+}
+
+.galton-board-footer {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  background: #111412;
+}
+
+.galton-progress-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #2a2f2c;
+}
+
+.galton-progress-track > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), #ffeba4);
+  transition: width 100ms linear;
+}
+
+.galton-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 18px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.galton-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.galton-legend span::before {
+  width: 8px;
+  height: 8px;
+  content: "";
+  border-radius: 50%;
+  background: var(--amber);
+}
+
+.galton-legend span[data-series="observed"]::before {
+  border-radius: 2px;
+  background: #c68f31;
+}
+
+.galton-legend span[data-series="expected"]::before {
+  width: 13px;
+  height: 2px;
+  border-radius: 0;
+  background: var(--blue);
+}
+
+.galton-controls {
+  position: sticky;
+  top: 94px;
+  overflow: hidden;
+}
+
+.galton-controls > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #111412;
+}
+
+.galton-controls > header svg {
+  color: var(--amber);
+}
+
+.galton-select,
+.galton-seed {
+  display: grid;
+  gap: 7px;
+  padding: 14px 16px 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.galton-select select,
+.galton-seed input {
+  width: 100%;
+  min-height: 40px;
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface-control);
+}
+
+.galton-select select {
+  padding: 0 10px;
+}
+
+.galton-seed input {
+  padding: 0 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.galton-equation {
+  margin: 12px 16px 0;
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 11px 12px;
+  color: #f7d97f;
+  border: 1px solid #524627;
+  border-radius: 6px;
+  background: #17140d;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.galton-variable-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  padding: 9px 16px 12px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  font-size: 10px;
+}
+
+.galton-variable-key i {
+  color: var(--blue);
+  font-style: normal;
+}
+
+.galton-control-group {
+  display: grid;
+  gap: 13px;
+  padding: 14px 16px 2px;
+}
+
+.galton-range {
+  display: grid;
+  gap: 7px;
+}
+
+.galton-range > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.galton-range output {
+  min-width: 52px;
+  color: var(--text);
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.galton-range input {
+  width: 100%;
+  accent-color: var(--amber);
+}
+
+.galton-control-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 16px;
+}
+
+.galton-control-actions .button {
+  min-width: 0;
+}
+
+.galton-control-actions .button-primary {
+  grid-column: 1 / -1;
+}
+
+.galton-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-top: 18px;
+  overflow: hidden;
+  border-block: 1px solid var(--line);
+  background: #111412;
+}
+
+.galton-metrics article {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 16px;
+  border-right: 1px solid var(--line);
+}
+
+.galton-metrics article:last-child {
+  border-right: 0;
+}
+
+.galton-metrics span,
+.galton-metrics small {
+  color: var(--muted);
+}
+
+.galton-metrics span {
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.galton-metrics strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.galton-metrics small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.galton-bin-tape {
+  margin-top: 18px;
+  overflow: hidden;
+}
+
+.galton-bin-tape > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 17px;
+  border-bottom: 1px solid var(--line);
+  background: #111412;
+}
+
+.galton-bin-tape h2 {
+  margin: 4px 0 0;
+  font-size: 17px;
+}
+
+.galton-bin-tape > header > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.galton-bin-tape > div {
+  display: flex;
+  overflow-x: auto;
+  padding: 0 10px 10px;
+}
+
+.galton-bin-tape article {
+  min-width: 62px;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 13px 7px 5px;
+  border-right: 1px solid var(--line);
+}
+
+.galton-bin-tape article > span,
+.galton-bin-tape article small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.galton-bin-tape article strong {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.galton-bin-tape article > div {
+  width: 18px;
+  height: 72px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 3px 3px 0 0;
+  background: #20241f;
+}
+
+.galton-bin-tape article > div span {
+  width: 100%;
+  background: linear-gradient(180deg, #ffe399, #9d691f);
+  transition: height 140ms linear;
+}
+
+@keyframes galton-run-pulse {
+  50% { opacity: 0.5; transform: scale(0.78); }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -2818,7 +3277,7 @@ textarea {
   }
 
   .side-rail nav {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     margin: 0;
   }
 
@@ -2938,6 +3397,26 @@ textarea {
   .scenario-decision > div:last-child {
     border-bottom: 0;
   }
+
+  .galton-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .galton-controls {
+    position: static;
+  }
+
+  .galton-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .galton-metrics article:nth-child(3n) {
+    border-right: 0;
+  }
+
+  .galton-metrics article:nth-child(-n + 3) {
+    border-bottom: 1px solid var(--line);
+  }
 }
 
 @media (min-width: 761px) and (max-width: 1100px) {
@@ -3016,7 +3495,7 @@ textarea {
   }
 
   .side-rail nav {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .side-rail nav a {
@@ -3034,6 +3513,65 @@ textarea {
 
   .save-footer {
     display: none;
+  }
+
+  .galton-page-header {
+    align-items: stretch;
+  }
+
+  .galton-header-signal {
+    width: 100%;
+  }
+
+  .galton-board-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .galton-speed {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .galton-speed button {
+    width: 100%;
+  }
+
+  .galton-playback {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .galton-canvas-wrap {
+    min-height: 510px;
+  }
+
+  .galton-canvas {
+    height: clamp(510px, 120vw, 620px);
+  }
+
+  .galton-legend {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 7px 14px;
+  }
+
+  .galton-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .galton-metrics article,
+  .galton-metrics article:nth-child(3n) {
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .galton-metrics article:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .galton-metrics article:nth-last-child(-n + 2) {
+    border-bottom: 0;
   }
 
   .page-header {
