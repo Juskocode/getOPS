@@ -15,6 +15,7 @@ import { NavLink, Outlet, useLocation } from "react-router";
 import { apiClient } from "../api/client";
 import { rankProgress } from "../domain/ranks";
 import { useProfileState } from "../state/profile-state";
+import { CommandPalette } from "./CommandPalette";
 
 const navigation = [
   { to: "/", label: "Today", icon: Activity, end: true },
@@ -65,19 +66,32 @@ export function AppShell() {
             <small>Trading operations command lab</small>
           </span>
         </div>
-        <div className="runtime-strip" aria-label="Runtime status">
-          <span data-tone={health.isSuccess ? "healthy" : health.isError ? "warning" : "neutral"}>
-            <Server size={15} />
-            {apiLabel}
-          </span>
-          <span data-tone={health.data?.database === "ready" ? "healthy" : health.isError ? "warning" : "neutral"}>
-            <Database size={15} />
-            {databaseLabel}
-          </span>
-          <NavLink className="profile-link" to="/profile">
-            <CircleUserRound size={17} />
-            {state.displayName || "Operator"}
-          </NavLink>
+        <div className="product-actions">
+          <CommandPalette />
+          <div className="runtime-strip" aria-label="Runtime status">
+            <span
+              data-tone={health.isSuccess ? "healthy" : health.isError ? "warning" : "neutral"}
+              title="API runtime"
+            >
+              <Server size={15} />
+              {apiLabel}
+            </span>
+            <span
+              data-tone={health.data?.database === "ready" ? "healthy" : health.isError ? "warning" : "neutral"}
+              title="Persistence runtime"
+            >
+              <Database size={15} />
+              {databaseLabel}
+            </span>
+            <NavLink className="profile-link" to="/profile" aria-label={`Open ${state.displayName || "Operator"} progress`}>
+              <CircleUserRound size={18} />
+              <span>
+                <strong>{state.displayName || "Operator"}</strong>
+                <small>{rank.current.name} · {rank.xp.toLocaleString()} XP</small>
+              </span>
+              <i aria-hidden="true"><span style={{ width: `${rank.progress}%` }} /></i>
+            </NavLink>
+          </div>
         </div>
       </header>
 

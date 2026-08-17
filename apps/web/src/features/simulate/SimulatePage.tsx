@@ -8,8 +8,8 @@ import {
   ShieldAlert,
   Siren,
 } from "lucide-react";
-import { useState, type CSSProperties } from "react";
-import { Link } from "react-router";
+import { type CSSProperties } from "react";
+import { Link, useSearchParams } from "react-router";
 
 import { branchById } from "../../domain/branches";
 import { scenarioBriefings } from "../../domain/scenario-briefings";
@@ -17,7 +17,8 @@ import { scenarioBriefings } from "../../domain/scenario-briefings";
 const initialScenario = scenarioBriefings[0]!;
 
 export function SimulatePage() {
-  const [selectedId, setSelectedId] = useState(initialScenario.id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedId = searchParams.get("scenario") ?? initialScenario.id;
   const scenario =
     scenarioBriefings.find((candidate) => candidate.id === selectedId) ?? initialScenario;
   const branch = branchById.get(scenario.branchId);
@@ -61,7 +62,8 @@ export function SimulatePage() {
                   key={candidate.id}
                   type="button"
                   className={candidate.id === scenario.id ? "is-active" : ""}
-                  onClick={() => setSelectedId(candidate.id)}
+                  aria-pressed={candidate.id === scenario.id}
+                  onClick={() => setSearchParams({ scenario: candidate.id })}
                 >
                   <span>{String(index + 1).padStart(2, "0")}</span>
                   <div>

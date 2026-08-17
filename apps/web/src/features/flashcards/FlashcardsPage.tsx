@@ -7,9 +7,14 @@ import {
   ArrowRight,
   BookOpenCheck,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CircleDot,
   Eye,
   Filter,
+  LoaderCircle,
+  Maximize2,
+  Minimize2,
   RefreshCw,
   Save,
   Search,
@@ -41,10 +46,9 @@ export function FlashcardsPage() {
   const { state, save, isSaving } = useProfileState();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedBranch = searchParams.get("branch");
-  const initialBranch = branches.some((branch) => branch.id === requestedBranch)
+  const branchFilter: BranchId | "all" = branches.some((branch) => branch.id === requestedBranch)
     ? (requestedBranch as BranchId)
     : "all";
-  const [branchFilter, setBranchFilter] = useState<BranchId | "all">(initialBranch);
   const [evidenceFilter, setEvidenceFilter] = useState<EvidenceFilter>("all");
   const [query, setQuery] = useState("");
   const latest = useMemo(() => latestAttempts(state), [state]);
@@ -72,6 +76,8 @@ export function FlashcardsPage() {
   const [answer, setAnswer] = useState(savedDraft);
   const [result, setResult] = useState<RecallValidationResponse | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState("");
   const draftTimer = useRef<number | null>(null);
 
@@ -111,7 +117,6 @@ export function FlashcardsPage() {
           <button
             type="button"
             onClick={() => {
-              setBranchFilter("all");
               setEvidenceFilter("all");
               setQuery("");
               setSearchParams({});
@@ -145,6 +150,11 @@ export function FlashcardsPage() {
     if (next) selectCard(next.id);
   }
 
+  function previousCard() {
+    const previous = filtered[(activeIndex - 1 + filtered.length) % filtered.length];
+    if (previous) selectCard(previous.id);
+  }
+
   function nextPriorityCard() {
     const remaining = filtered.filter((candidate) => candidate.id !== card.id);
     const unvalidated = remaining.find((candidate) => !latest.has(candidate.id));
@@ -172,7 +182,9 @@ export function FlashcardsPage() {
   }
 
   async function validate() {
+    if (isValidating) return;
     setValidationError("");
+    setIsValidating(true);
     try {
       const validation = await apiClient.validateRecall({
         cardId: card.id,
@@ -207,11 +219,13 @@ export function FlashcardsPage() {
           ? error.message
           : "Validation could not be completed. Your answer remains on screen; try again.",
       );
+    } finally {
+      setIsValidating(false);
     }
   }
 
   return (
-    <div className="page flashcard-page">
+    <div className={focusMode ? "page flashcard-page is-focus-mode" : "page flashcard-page"}>
       <header className="page-header">
         <div>
           <span className="eyebrow">PRACTICE / WRITTEN RECALL</span>
@@ -230,6 +244,7 @@ export function FlashcardsPage() {
             <Search size={15} />
             <input
               value={query}
+              disabled={isValidating}
               onChange={(event) => setQuery(event.target.value.slice(0, 80))}
               placeholder="Sequence, latency, rejects..."
             />
@@ -239,9 +254,9 @@ export function FlashcardsPage() {
           Branch
           <select
             value={branchFilter}
+            disabled={isValidating}
             onChange={(event) => {
               const branch = event.target.value as BranchId | "all";
-              setBranchFilter(branch);
               setSearchParams(branch === "all" ? {} : { branch });
             }}
           >
@@ -255,6 +270,7 @@ export function FlashcardsPage() {
           Evidence
           <select
             value={evidenceFilter}
+            disabled={isValidating}
             onChange={(event) => setEvidenceFilter(event.target.value as EvidenceFilter)}
           >
             <option value="all">All evidence</option>
@@ -267,8 +283,8 @@ export function FlashcardsPage() {
         <button
           type="button"
           className="button"
+          disabled={isValidating}
           onClick={() => {
-            setBranchFilter("all");
             setEvidenceFilter("all");
             setQuery("");
             setSearchParams({});
@@ -292,7 +308,39 @@ export function FlashcardsPage() {
                 {latest.has(card.id) ? <CheckCircle2 size={13} /> : <CircleDot size={13} />}
                 {latest.has(card.id) ? `${latest.get(card.id)?.score}% latest` : "Unvalidated"}
               </span>
-              <span>{activeIndex + 1} / {filtered.length}</span>
+              <div className="recall-card-nav">
+                <button
+                  type="button"
+                  className="icon-button"
+                  title="Previous card"
+                  aria-label="Previous card"
+                  disabled={filtered.length < 2 || isValidating}
+                  onClick={previousCard}
+                >
+                  <ChevronLeft size={17} />
+                </button>
+                <span>{activeIndex + 1} / {filtered.length}</span>
+                <button
+                  type="button"
+                  className="icon-button"
+                  title="Next card"
+                  aria-label="Next card"
+                  disabled={filtered.length < 2 || isValidating}
+                  onClick={nextCard}
+                >
+                  <ChevronRight size={17} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-button focus-toggle"
+                  title={focusMode ? "Exit focus mode" : "Enter focus mode"}
+                  aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"}
+                  aria-pressed={focusMode}
+                  onClick={() => setFocusMode((current) => !current)}
+                >
+                  {focusMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                </button>
+              </div>
             </div>
             <h2>{card.prompt}</h2>
             <p>Write the decision and operational evidence you would say aloud.</p>
@@ -305,6 +353,7 @@ export function FlashcardsPage() {
             <span>Your recall</span>
             <textarea
               value={answer}
+              disabled={isValidating}
               onChange={(event) => setAnswer(event.target.value.slice(0, 1_200))}
               placeholder="Answer from memory before opening the reference..."
               rows={10}
@@ -312,14 +361,58 @@ export function FlashcardsPage() {
             <small>
               <span>{words} words</span>
               <span>{answer.length} / 1200</span>
-              <span><Save size={13} /> {isSaving ? "Saving" : "Draft synchronized"}</span>
+              <span
+                data-state={isSaving ? "saving" : answer !== savedDraft ? "queued" : "saved"}
+                aria-live="polite"
+              >
+                <Save size={13} />
+                {isSaving ? "Saving revision" : answer !== savedDraft ? "Sync queued" : "Draft synchronized"}
+              </span>
             </small>
           </label>
 
           {validationError ? <div className="inline-error" role="alert">{validationError}</div> : null}
 
+          <footer className="recall-actions">
+            <button
+              type="button"
+              className="button button-primary"
+              disabled={answer.trim().length < 20 || isSaving || isValidating}
+              onClick={() => void validate()}
+            >
+              {isValidating ? <LoaderCircle className="is-spinning" size={17} /> : <CheckCircle2 size={17} />}
+              {isValidating ? "Checking evidence" : result ? "Validate revision" : "Validate response"}
+            </button>
+            <button
+              type="button"
+              className="button"
+              disabled={answer.trim().length < 20 || revealed || isValidating}
+              onClick={() => setRevealed(true)}
+            >
+              <Eye size={17} /> {revealed ? "Reference open" : "Reveal reference"}
+            </button>
+            <span />
+            <button
+              type="button"
+              className="button icon-button"
+              title="Shuffle filtered cards"
+              aria-label="Shuffle filtered cards"
+              disabled={filtered.length < 2 || isValidating}
+              onClick={shuffleCard}
+            >
+              <Shuffle size={17} />
+            </button>
+            <button type="button" className="button" disabled={filtered.length < 2 || isValidating} onClick={nextCard}>
+              Next <ArrowRight size={17} />
+            </button>
+          </footer>
+
           {result ? (
-            <section className="validation-result" aria-live="polite">
+            <section
+              className="validation-result"
+              data-tone={result.score >= 80 ? "strong" : "review"}
+              aria-live="polite"
+            >
               <div className="validation-score">
                 <span className="status-label" data-tone={result.score >= 80 ? "healthy" : "warning"}>
                   {result.verdict.toUpperCase()}
@@ -328,9 +421,18 @@ export function FlashcardsPage() {
                 <small>rubric v{result.rubricVersion}</small>
               </div>
               <div className="score-components">
-                <div><span>Concept coverage</span><strong>{result.coverageScore} / 60</strong></div>
-                <div><span>Answer structure</span><strong>{result.structureScore} / 25</strong></div>
-                <div><span>Operational detail</span><strong>{result.specificityScore} / 15</strong></div>
+                <div>
+                  <span>Concept coverage</span><strong>{result.coverageScore} / 60</strong>
+                  <i><span style={{ width: `${(result.coverageScore / 60) * 100}%` }} /></i>
+                </div>
+                <div>
+                  <span>Answer structure</span><strong>{result.structureScore} / 25</strong>
+                  <i><span style={{ width: `${(result.structureScore / 25) * 100}%` }} /></i>
+                </div>
+                <div>
+                  <span>Operational detail</span><strong>{result.specificityScore} / 15</strong>
+                  <i><span style={{ width: `${(result.specificityScore / 15) * 100}%` }} /></i>
+                </div>
               </div>
               <div className="concept-columns">
                 <div>
@@ -362,32 +464,6 @@ export function FlashcardsPage() {
             </section>
           ) : null}
 
-          <footer className="recall-actions">
-            <button
-              type="button"
-              className="button button-primary"
-              disabled={answer.trim().length < 20 || isSaving}
-              onClick={() => void validate()}
-            >
-              <CheckCircle2 size={17} />
-              {result ? "Validate revision" : "Validate response"}
-            </button>
-            <button
-              type="button"
-              className="button"
-              disabled={answer.trim().length < 20}
-              onClick={() => setRevealed(true)}
-            >
-              <Eye size={17} /> Reveal reference
-            </button>
-            <span />
-            <button type="button" className="button" onClick={shuffleCard}>
-              <Shuffle size={17} /> Shuffle
-            </button>
-            <button type="button" className="button" onClick={nextCard}>
-              Next <ArrowRight size={17} />
-            </button>
-          </footer>
         </section>
 
         <aside className="attempt-panel">

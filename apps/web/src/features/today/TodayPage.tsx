@@ -18,9 +18,15 @@ import { latestAttempts } from "../../state/evidence";
 import { useProfileState } from "../../state/profile-state";
 
 export function TodayPage() {
-  const { state, record } = useProfileState();
+  const { state } = useProfileState();
   const latest = useMemo(() => latestAttempts(state), [state]);
   const attempts = [...latest.values()];
+  const today = new Date().toLocaleDateString("en-CA");
+  const dailyTarget = 5;
+  const dailyAttempts = (state.flashAttempts ?? []).filter(
+    (attempt) => new Date(attempt.createdAt).toLocaleDateString("en-CA") === today,
+  ).length;
+  const dailyProgress = Math.min(100, Math.round((dailyAttempts / dailyTarget) * 100));
   const strong = attempts.filter((attempt) => attempt.score >= 80).length;
   const average = attempts.length
     ? Math.round(attempts.reduce((sum, attempt) => sum + attempt.score, 0) / attempts.length)
@@ -92,10 +98,11 @@ export function TodayPage() {
           <strong>{average}%</strong>
           <small>{attempts.length ? "Latest evidence per card" : "Baseline open"}</small>
         </article>
-        <article>
-          <span>Evidence revision</span>
-          <strong>{record.revision}</strong>
-          <small>{record.transport === "v3" ? "PostgreSQL synchronized" : "Legacy bridge"}</small>
+        <article className="daily-evidence-kpi">
+          <span>Daily evidence</span>
+          <strong>{dailyAttempts} / {dailyTarget}</strong>
+          <small>{dailyAttempts >= dailyTarget ? "Daily target secured" : `${dailyTarget - dailyAttempts} reps remaining`}</small>
+          <div className="daily-progress"><span style={{ width: `${dailyProgress}%` }} /></div>
         </article>
       </section>
 
