@@ -1,21 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import type { GaltonSimulation } from "./galton-engine";
-
-export type GaltonSpeed = "slow" | "normal" | "fast";
-
-export interface GaltonProgress {
-  processed: number;
-  bins: number[];
-  elapsedMs: number;
-  activeParticles: number;
-}
-
-export const galtonSpeedProfiles: Record<GaltonSpeed, { rate: number; duration: number }> = {
-  slow: { rate: 600, duration: 2_200 },
-  normal: { rate: 3_500, duration: 1_350 },
-  fast: { rate: 15_000, duration: 760 },
-};
+import { GaltonPlayback, type ActiveParticle, type GaltonProgress, type GaltonSpeed } from "./galton-playback";
 
 interface GaltonCanvasProps {
   simulation: GaltonSimulation;
@@ -24,12 +10,6 @@ interface GaltonCanvasProps {
   speed: GaltonSpeed;
   onProgress: (progress: GaltonProgress) => void;
   onComplete: () => void;
-}
-
-interface ActiveParticle {
-  index: number;
-  startedAt: number;
-  duration: number;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -251,17 +231,15 @@ export function GaltonCanvas({
     let pixelRatio = 1;
     let frame = 0;
     let previousTimestamp = performance.now();
-    let visualTime = 0;
-    let elapsedMs = 0;
-    let carry = 0;
-    let processed = 0;
     let lastReport = 0;
     let completionNotified = false;
     let pausedDrawn = false;
-    let activeParticles: ActiveParticle[] = [];
-    const bins = new Uint32Array(simulation.config.rows + 1);
+    const playback = new GaltonPlayback(simulation);
     const reducedMotionQuery = globalThis.matchMedia("(prefers-reduced-motion: reduce)");
     let reducedMotion = reducedMotionQuery.matches;
+
+    const draw = () => drawBoard(context, width, height, simulation, playback.bins,
+      playback.processed, playback.particles, playback.time, reducedMotion);
 
     const resize = () => {
       const bounds = canvas.getBoundingClientRect();
@@ -272,15 +250,11 @@ export function GaltonCanvas({
       canvas.height = Math.round(height * pixelRatio);
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       pausedDrawn = false;
+      draw();
     };
 
     const report = () => {
-      progressRef.current({
-        processed,
-        bins: Array.from(bins),
-        elapsedMs,
-        activeParticles: activeParticles.length,
-      });
+      progressRef.current(playback.snapshot());
     };
 
     const resizeObserver = new ResizeObserver(resize);
@@ -290,48 +264,18 @@ export function GaltonCanvas({
 
     const handleMotionPreference = (event: MediaQueryListEvent) => {
       reducedMotion = event.matches;
-      if (reducedMotion) activeParticles = [];
+      if (reducedMotion) playback.particles = [];
       pausedDrawn = false;
+      draw();
     };
     reducedMotionQuery.addEventListener("change", handleMotionPreference);
 
     const animate = (timestamp: number) => {
       const delta = Math.min(50, Math.max(0, timestamp - previousTimestamp));
       previousTimestamp = timestamp;
-      const profile = galtonSpeedProfiles[speedRef.current];
-
-      if (runningRef.current) {
+      if (runningRef.current && !document.hidden) {
         pausedDrawn = false;
-        visualTime += delta;
-        if (processed < simulation.config.ballCount) {
-          elapsedMs += delta;
-          const exactAddition = carry + (profile.rate * delta) / 1_000;
-          const addition = Math.floor(exactAddition);
-          carry = exactAddition - addition;
-          const nextProcessed = Math.min(simulation.config.ballCount, processed + addition);
-
-          if (nextProcessed > processed) {
-            const newCount = nextProcessed - processed;
-            const sampleCount = reducedMotion ? 0 : Math.min(18, newCount);
-            const sampleStride = sampleCount ? newCount / sampleCount : 0;
-            for (let sample = 0; sample < sampleCount; sample += 1) {
-              const index = Math.min(nextProcessed - 1, processed + Math.floor(sample * sampleStride));
-              activeParticles.push({ index, startedAt: visualTime, duration: profile.duration });
-            }
-            for (let index = processed; index < nextProcessed; index += 1) {
-              const bin = simulation.outcomes[index] ?? 0;
-              bins[bin] = (bins[bin] ?? 0) + 1;
-            }
-            processed = nextProcessed;
-          }
-        }
-
-        if (activeParticles.length) {
-          activeParticles = activeParticles.filter(
-            (particle) => visualTime - particle.startedAt < particle.duration,
-          );
-          if (activeParticles.length > 900) activeParticles.splice(0, activeParticles.length - 900);
-        }
+        playback.advance(delta, speedRef.current, reducedMotion);
       }
 
       if (!runningRef.current && pausedDrawn) {
@@ -339,27 +283,16 @@ export function GaltonCanvas({
         return;
       }
 
-      drawBoard(
-        context,
-        width,
-        height,
-        simulation,
-        bins,
-        processed,
-        activeParticles,
-        visualTime,
-        reducedMotion,
-      );
+      draw();
       if (!runningRef.current) pausedDrawn = true;
 
-      if (timestamp - lastReport >= 100 || processed === simulation.config.ballCount) {
+      if (timestamp - lastReport >= 100 || playback.complete) {
         report();
         lastReport = timestamp;
       }
       if (
         !completionNotified &&
-        processed === simulation.config.ballCount &&
-        activeParticles.length === 0
+        playback.complete
       ) {
         completionNotified = true;
         completeRef.current();

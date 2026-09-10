@@ -3139,13 +3139,18 @@ textarea {
   font-size: 17px;
 }
 
-.galton-bin-tape > header > span {
+.galton-export-actions,
+.galton-export-actions > span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--muted);
   font-size: 11px;
 }
+
+.galton-export-actions { flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.galton-settings-status { margin: 12px 16px 0; color: var(--muted); font-size: 11px; }
+.galton-bin-tape > header { flex-wrap: wrap; }
 
 .galton-bin-tape > div {
   display: flex;

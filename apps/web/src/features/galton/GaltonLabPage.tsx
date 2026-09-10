@@ -1,6 +1,7 @@
 import {
   Activity,
   Dices,
+  Download,
   FastForward,
   Gauge,
   Pause,
@@ -12,14 +13,15 @@ import {
   Sparkles,
   Sigma,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { GaltonCanvas } from "./GaltonCanvas";
 import {
-  GaltonCanvas,
   galtonSpeedProfiles,
   type GaltonProgress,
   type GaltonSpeed,
-} from "./GaltonCanvas";
+} from "./galton-playback";
+import { GALTON_SETTINGS_KEY, galtonResultsCsv, readGaltonSettings } from "./galton-session";
 import {
   defaultGaltonConfig,
   formatGaltonEquation,
@@ -67,6 +69,8 @@ function RangeControl({
       <span>{label}<output>{format(value)}</output></span>
       <input
         type="range"
+        aria-label={label}
+        aria-valuetext={format(value)}
         min={minimum}
         max={maximum}
         step={step}
@@ -78,7 +82,7 @@ function RangeControl({
 }
 
 function emptyProgress(rows: number): GaltonProgress {
-  return { processed: 0, bins: Array.from({ length: rows + 1 }, () => 0), elapsedMs: 0, activeParticles: 0 };
+  return { released: 0, processed: 0, bins: Array.from({ length: rows + 1 }, () => 0), elapsedMs: 0, activeParticles: 0 };
 }
 
 function formatRate(rate: number): string {
@@ -94,12 +98,19 @@ function randomSeed(): number {
 }
 
 export function GaltonLabPage() {
-  const [draft, setDraft] = useState<GaltonConfig>({ ...defaultGaltonConfig });
-  const [applied, setApplied] = useState<GaltonConfig>({ ...defaultGaltonConfig });
+  const [draft, setDraft] = useState<GaltonConfig>(readGaltonSettings);
+  const [applied, setApplied] = useState<GaltonConfig>(draft);
+  const [saved, setSaved] = useState(true);
   const [runId, setRunId] = useState(1);
   const [running, setRunning] = useState(true);
   const [speed, setSpeed] = useState<GaltonSpeed>("normal");
-  const [progress, setProgress] = useState<GaltonProgress>(() => emptyProgress(defaultGaltonConfig.rows));
+  const [progress, setProgress] = useState<GaltonProgress>(() => emptyProgress(applied.rows));
+  useEffect(() => {
+    try {
+      localStorage.setItem(GALTON_SETTINGS_KEY, JSON.stringify(applied));
+      setSaved(true);
+    } catch { setSaved(false); }
+  }, [applied]);
   const simulation = useMemo(() => simulateGalton(applied), [applied]);
   const observed = useMemo(
     () => summarizeDistribution(progress.bins, progress.processed),
@@ -146,6 +157,15 @@ export function GaltonLabPage() {
     else setRunning((current) => !current);
   }
 
+  function exportResults() {
+    const url = URL.createObjectURL(new Blob([galtonResultsCsv(simulation, progress)], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `galton-${applied.seed}-${progress.processed}-settled.csv`;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  }
+
   return (
     <div className="page galton-page">
       <header className="page-header galton-page-header">
@@ -167,8 +187,8 @@ export function GaltonLabPage() {
             <div className="galton-run-state" data-state={isComplete ? "complete" : running ? "running" : "paused"}>
               <span />
               <div>
-                <strong>{isComplete ? "Population settled" : running ? "Sampling field" : "Run paused"}</strong>
-                <small>{progress.processed.toLocaleString()} / {simulation.config.ballCount.toLocaleString()} outcomes</small>
+                <strong>{isComplete ? "Population settled" : !running ? "Run paused" : progress.released === applied.ballCount ? "Final landings" : "Sampling field"}</strong>
+                <small>{progress.processed.toLocaleString()} / {simulation.config.ballCount.toLocaleString()} settled</small>
               </div>
             </div>
 
@@ -213,7 +233,7 @@ export function GaltonLabPage() {
           </div>
 
           <footer className="galton-board-footer">
-            <div className="galton-progress-track" aria-label={`${completion.toFixed(1)} percent complete`}>
+            <div className="galton-progress-track" role="progressbar" aria-label="Settled population" aria-valuenow={progress.processed} aria-valuemin={0} aria-valuemax={applied.ballCount}>
               <span style={{ width: `${completion}%` }} />
             </div>
             <div className="galton-legend">
@@ -229,6 +249,7 @@ export function GaltonLabPage() {
             <span className="eyebrow">FIELD MODEL</span>
             <SlidersHorizontal size={18} />
           </header>
+          <p className="galton-settings-status" role="status">{isDirty ? "Unapplied changes" : saved ? "Settings saved on this device" : "Settings could not be saved"}</p>
 
           <label className="galton-select">
             <span>Equation</span>
@@ -410,7 +431,12 @@ export function GaltonLabPage() {
             <span className="eyebrow">TERMINAL STATES</span>
             <h2>Distribution tape</h2>
           </div>
-          <span><Sigma size={15} /> {simulation.config.rows + 1} bins</span>
+          <div className="galton-export-actions">
+            <span><Sigma size={15} /> {simulation.config.rows + 1} bins</span>
+            <button type="button" className="button" disabled={!progress.processed} onClick={exportResults}>
+              <Download size={16} /> Export CSV
+            </button>
+          </div>
         </header>
         <div>
           {Array.from({ length: simulation.config.rows + 1 }, (_, bin) => {
