@@ -15,6 +15,7 @@
     "preview:status": "node scripts/preview.mjs status",
     "preview:stop": "node scripts/preview.mjs stop",
     "preview:test": "node --test scripts/preview/*.test.mjs",
+    "preview:browser": "node scripts/preview/galton-browser-check.mjs",
     "web:dev": "npm run dev --workspace @getops/web",
     "web:build": "npm run build --workspace @getops/web",
     "web:typecheck": "npm run typecheck --workspace @getops/web",

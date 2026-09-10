@@ -49,6 +49,14 @@ stop the preview, delete only `.runtime/preview/access.json`, and start again.
 - Check authenticated `/api/v1/health/ready` and `/lab/galton` through the public
   hostname. Local health alone is not evidence of tunnel availability.
 
+With Playwright and Chrome installed, run `npm run preview:browser` against the
+local release. `GETOPS_PLAYWRIGHT_MODULE` accepts an installed Playwright module
+path and `GETOPS_QA_URL` selects another origin. This check uses a fresh browser
+context and never submits study evidence. It verifies 50,000 settled outcomes,
+CSV counts, settings restore, pause, reduced motion, desktop/mobile screenshots,
+canvas pixels after resize, and console errors. Screenshots stay in
+`.runtime/qa`, outside Git and container build contexts.
+
 ## Galton Lab
 
 The lab simulates all configured trials (up to 50,000). The animation renders a
