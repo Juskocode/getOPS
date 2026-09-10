@@ -73,6 +73,10 @@ GETOPS_DB_PORT=55438 \
 
 ## Local Development
 
+For password-protected remote access to the running stack, use
+`npm run preview:start`. See [Private Cloudflare Preview](docs/private-preview.md)
+for credentials, verification, and shutdown.
+
 Install dependencies and start PostgreSQL:
 
 ```bash

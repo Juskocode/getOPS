@@ -1,4 +1,8 @@
 .git
+.runtime
+.env
+.env.*
+backups
 .DS_Store
 data
 dist

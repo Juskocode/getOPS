@@ -10,7 +10,11 @@
   ],
   "scripts": {
     "build": "npm run contracts:build && npm run web:build && npm run api:build && npm run legacy:build",
-    "test": "npm run contracts:typecheck && npm run web:test && npm run api:test && npm run legacy:test",
+    "test": "npm run contracts:typecheck && npm run web:test && npm run api:test && npm run legacy:test && npm run preview:test",
+    "preview:start": "node scripts/preview.mjs start",
+    "preview:status": "node scripts/preview.mjs status",
+    "preview:stop": "node scripts/preview.mjs stop",
+    "preview:test": "node --test scripts/preview/*.test.mjs",
     "web:dev": "npm run dev --workspace @getops/web",
     "web:build": "npm run build --workspace @getops/web",
     "web:typecheck": "npm run typecheck --workspace @getops/web",
