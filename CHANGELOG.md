@@ -3,6 +3,43 @@
 All notable getOPS changes are recorded here. This project follows semantic
 versioning for the application contract, persistence model, and release process.
 
+## 3.0.0 - Unreleased
+
+### Platform
+
+- Added the React 19 and TypeScript client with explicit Today, Learn, written
+  recall, Simulate, and Profile routes.
+- Added a C++20 API with separated domain, HTTP, and libpq repository layers.
+- Added PostgreSQL JSONB profile state, monotonic revisions, bounded history,
+  advisory locking for first writers, and forward-only migrations.
+- Added shared Zod contracts, versioned curriculum content, OpenAPI, and
+  compatibility aliases for the legacy state transport.
+
+### Integrity
+
+- Moved written-recall scoring to the C++ service and re-score rubric v2 evidence
+  before accepting a durable state revision.
+- Added real PostgreSQL conflict, concurrent writer, import/export, and
+  socket-level API integration gates.
+
+### Training Experience
+
+- Rebuilt Learn as a five-stage command path with nine branch-level deep dives,
+  signal paths, operator runbooks, failure comparisons, and interview checks.
+- Added a native scenario desk with six telemetry briefings spanning market
+  data, sessions, capacity, order state, and risk-control incidents.
+- Added branch-aware recall search and evidence filters, explicit review and
+  next actions, operator grades, readiness cues, and responsive mobile
+  navigation.
+- Moved browser routing to the patched React Router 8.3 package.
+
+### Deployment
+
+- Added a four-service PostgreSQL, migration, C++ API, and Nginx Compose stack.
+- Moved the specialist fallback to `/legacy/` and isolated its service worker.
+- Added custom-format PostgreSQL backup, canonical legacy import verification,
+  and an isolated QA deployment pattern.
+
 ## 2.0.0 - 2026-07-15
 
 ### Written Recall

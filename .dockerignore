@@ -1,7 +1,15 @@
 .git
+.runtime
+.env
+.env.*
+backups
 .DS_Store
 data
 dist
+apps/*/dist
+packages/*/dist
+services/*/build
+legacy/dist
 node_modules
 __pycache__
 *.pyc

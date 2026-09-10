@@ -7,33 +7,50 @@ flowchart LR
     B[Browser] -->|HTML and hashed assets| E[Nginx edge]
     E -->|immutable static response| A[Content-addressed assets]
     B -->|GET state with If-None-Match| E
-    E -->|API cache bypass| G[Gunicorn workers]
-    G -->|read or atomic revision write| S[(SQLite WAL)]
-    B -->|offline app shell| W[Service worker cache]
+    E -->|API cache bypass| C[C++ workers]
+    C -->|validated revision transaction| P[(PostgreSQL)]
+    E -->|temporary static route| L[/legacy/ workspace]
     E -->|request ID and security headers| B
 ```
 
-The edge is deliberately small. It serves the generated application, compresses content, applies rate and body-size limits, and proxies only `/api/*` to the origin. TLS and user access control belong at the external load balancer, private tunnel, or managed CDN in front of this stack.
+The edge serves the React release, exposes the transitional legacy browser at
+`/legacy/`, applies rate and body-size limits, and proxies `/api/*` only to the
+C++ service. PostgreSQL and the API are not host-published by the production
+topology. TLS and user access control belong at a private tunnel, load balancer,
+or managed ingress in front of this loopback-first stack.
 
 ## Cache policy
 
 | Surface | Policy | Reason |
 | --- | --- | --- |
-| `/assets/app.<hash>.css` and `.js` | `public, max-age=31536000, immutable` | A content change creates a new URL. |
+| `/assets/<hash>.css` and `.js` | `public, max-age=31536000, immutable` | A content change creates a new URL. |
 | `/`, `/index.html` | Revalidate | The shell must discover a new asset manifest quickly. |
-| `/service-worker.js` and `/asset-manifest.json` | Revalidate | Prevent an old worker from pinning an old release. |
-| `GET /api/state` | Private revalidation with ETag | A `304` avoids sending the state again without serving stale progress. |
+| `/legacy/service-worker.js` and manifest | Revalidate | Prevent the fallback worker from pinning an old release. |
+| `GET /api/v1/profiles/{profile}/state` | Private revalidation with ETag | A `304` avoids sending state again without serving stale progress. |
 | Other `/api/*` | `no-store` and edge bypass | Progress, exports, health, and diagnostics are mutable or private. |
 
-The service worker caches only the application shell and hashed assets. It never intercepts or stores `/api/*`; when the API is unavailable, the existing browser-state fallback remains the recovery path.
+The primary React release does not install an offline service worker. The legacy
+worker is scoped to `/legacy/`, caches only that fallback shell and its hashed
+assets, and never intercepts `/api/*`.
 
 ## State write flow
 
 1. The browser loads state and retains its revision ETag.
 2. A save sends both the numeric revision and `If-Match`.
-3. The origin starts `BEGIN IMMEDIATE`, reads the current revision, validates it, writes state plus history, and commits atomically.
+3. The C++ repository starts a PostgreSQL transaction, takes the profile lock,
+   reads the current revision, validates the candidate, writes state and history,
+   trims bounded history, and commits atomically.
 4. A stale writer receives `409 Conflict` and the latest ETag.
-5. The client reloads, merges monotonic progress fields, and retries once against the new revision.
+5. The React client reloads the newer revision and asks the learner to reapply
+   the interrupted change.
+
+## Legacy parity contracts
+
+The detailed training contracts below describe the specialist system currently
+served at `/legacy/` and the acceptance criteria for future React/C++ ports.
+Their durable validation still belongs to the transitional Python/SQLite
+implementation unless a section explicitly says it has moved. Written recall is
+already native and server-authoritative in the C++ service.
 
 ## Question evidence and readiness
 
@@ -100,9 +117,9 @@ flowchart LR
 
 Plan generation and synchronization never award XP. XP remains owned by the linked exercise, which prevents rebuilding or reopening a plan from becoming a reward loop. Opening a surface is not proof; each item stores its evidence baseline and closes only when the corresponding counter or gate advances.
 
-The browser retains at most 30 plans and permits one active plan with at most one active block. Rebuilding archives the previous active plan, day rollover archives stale work, and an active block becomes skipped when its plan is archived so no in-flight state is implied. Skip and restore are explicit operator actions. A complete plan requires every block to be complete; skipped blocks keep the plan open.
+The legacy browser retains at most 30 plans and permits one active plan with at most one active block. Rebuilding archives the previous active plan, day rollover archives stale work, and an active block becomes skipped when its plan is archived so no in-flight state is implied. Skip and restore are explicit operator actions. A complete plan requires every block to be complete; skipped blocks keep the plan open.
 
-Concurrent-state merge deduplicates plan and item IDs, prefers terminal item evidence over stale active state, retains only one current-day active plan, and archives competing active plans. The origin independently checks budgets, IDs, known types, text and item bounds, one-active constraints, plan-pointer integrity, terminal timestamps, and timestamp ordering before SQLite commit. Campaign exposes the latest ten plans as an audit ledger without rewriting their original evidence snapshot.
+Concurrent-state merge deduplicates plan and item IDs, prefers terminal item evidence over stale active state, retains only one current-day active plan, and archives competing active plans. The legacy origin independently checks budgets, IDs, known types, text and item bounds, one-active constraints, plan-pointer integrity, terminal timestamps, and timestamp ordering before its SQLite commit. Campaign exposes the latest ten plans as an audit ledger without rewriting their original evidence snapshot.
 
 ## Practice-run audit and exact repair
 
@@ -174,7 +191,7 @@ Each completed live lab appends one bounded record to `scenarioHistory`. The rec
 | Recovery | total, decision, evidence, handoff scores; selected evidence; missing fields; rationale; written handoff | Prove whether release criteria and residual risk were handled. |
 | Outcome | 60/40 composite | Apply the same pressure gate used by the learning path. |
 
-The browser retains at most 200 runs and limits each written record to 1,200 characters. The origin validates every nested score, index, branch, label, and text bound before SQLite commit. Legacy records remain valid and visible, but the UI labels missing component evidence rather than estimating it.
+The legacy browser retains at most 200 runs and limits each written record to 1,200 characters. The legacy origin validates every nested score, index, branch, label, and text bound before its SQLite commit. Older records remain valid and visible, but the UI labels missing component evidence rather than estimating it.
 
 The repair queue is derived from the selected replay. It normalizes decision, evidence, and communication components, allocates four questions to the weakest dimension and two to each supporting dimension, then ranks candidates by scenario domain, incident relevance, unseen coverage, and prior misses. Starting the queue creates a bounded `remediationCycles` record so its baseline and question set remain reproducible without mutating the source incident.
 
@@ -226,7 +243,7 @@ flowchart LR
 
 The 24 known prompts span positioning, behavioral evidence, technical operations, and submitted-task defense at Core, Hard, and HFT levels. Every category supplies five fixed dimensions; the selected prompt adds a sixth scenario-specific anchor. Delivery contributes ten points from the prompt's target word band and sentence structure. The model answer, pressure follow-ups, and common traps remain hidden until the user explicitly evaluates the transcript.
 
-Drafts are keyed by prompt and capped at 2,400 characters. Debounced saves write them to SQLite, and concurrent-state merge keeps the draft with the newest `updatedAt` timestamp. Completed runs preserve the prompt metadata, transcript, six dimension scores, delivery score, word count, estimated speaking time, pass state, and missing-dimension labels. History is capped at 100 unique run IDs; merge keeps the newest copy of a duplicate ID and rejects a selected-run pointer that no longer exists.
+Drafts are keyed by prompt and capped at 2,400 characters. Debounced legacy saves write them to SQLite, and concurrent-state merge keeps the draft with the newest `updatedAt` timestamp. Completed runs preserve the prompt metadata, transcript, six dimension scores, delivery score, word count, estimated speaking time, pass state, and missing-dimension labels. History is capped at 100 unique run IDs; merge keeps the newest copy of a duplicate ID and rejects a selected-run pointer that no longer exists.
 
 Before commit, the origin verifies the prompt's category, difficulty, branch, and target duration; exact rubric IDs and labels; minimum transcript length; word count; speaking-time estimate; delivery score; component arithmetic; the 75% pass verdict; missing labels; unique run IDs; known draft keys; filters; timer bounds; and selected-run linkage. A held rehearsal creates a reproducible question queue from its weakest dimensions and returns to the same rehearsal after practice.
 
@@ -298,17 +315,20 @@ Before changing the live process, run the isolated release gate:
 npm run verify:release
 ```
 
-The gate builds the release, runs frontend and backend contracts, starts the
-origin on an ephemeral loopback port with a temporary SQLite database, checks
-static caching and ETag behavior, saves valid flashcard evidence, rejects a
-forged rubric score, verifies export and database integrity, and removes all
-temporary state on exit.
+The gate runs the repository doctor, then exercises the C++ repository and HTTP
+service against disposable PostgreSQL containers. It verifies revision
+conflicts, import/export, authoritative recall scoring, diagnostics, and
+concurrent first-writer behavior without touching the normal volume.
 
 ```bash
 ./scripts/compose.sh ps
-./scripts/compose.sh logs -f origin edge
+./scripts/compose.sh logs -f api edge db
 ./scripts/backup.sh
+./scripts/migrate.sh
 ./scripts/compose.sh down
 ```
 
-Origin logs are one JSON record per request with request ID, status, bytes, and duration. Nginx rotates container logs through the Docker logging configuration. Backups use SQLite's online backup API and run an integrity check before replacing the destination file.
+The C++ API emits one structured line per request with request ID, status, bytes,
+and duration. Nginx and PostgreSQL logs are bounded by Docker log rotation.
+Backups use `pg_dump` custom archives and are written to the ignored `backups/`
+directory.
