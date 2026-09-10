@@ -1,8 +1,11 @@
 # Private Cloudflare Preview
 
 The React release, C++ API, and PostgreSQL remain in the existing loopback-bound
-Compose stack. A small Node gateway authenticates every route before proxying to
-Nginx. It does not replace the C++ backend or store study progress.
+Compose stack. A small Node gateway protects workspace routes before proxying to
+Nginx. The standalone `/lab/galton` page and its static assets are public and do
+not load any profile or call the API. All study/profile/control routes still
+require authentication. The gateway does not replace the C++ backend or store
+study progress.
 
 ```sh
 ./scripts/compose.sh up --build -d edge
@@ -11,7 +14,8 @@ npm run preview:start
 npm run preview:status
 ```
 
-Open the returned HTTPS URL. Use the username and random password in
+Open `/lab/galton` on the returned HTTPS URL without signing in. For the training
+workspace, use the username and random password in
 `.runtime/preview/access.json` when the browser prompts. Credentials, logs, and
 runtime metadata are ignored by Git; the credentials file is owner-readable
 only. Never post it in a PR. All authenticated visitors share this personal
@@ -19,8 +23,8 @@ workspace, so share credentials only with people allowed to read and edit it.
 
 The gateway binds to `127.0.0.1:18766` by default. Override
 `GETOPS_PREVIEW_PORT` or `GETOPS_PREVIEW_ORIGIN` at startup for another local
-stack. The origin must be loopback HTTP. Anonymous HTML, assets, profile APIs,
-and diagnostic requests receive 401. Cross-site writes are rejected; proxy
+stack. The origin must be loopback HTTP. Anonymous workspace, profile API,
+source-map, and diagnostic requests receive 401. Cross-site writes are rejected; proxy
 credentials and incoming forwarding headers are stripped. Requests have body
 and timeout limits. Remote responses are private/no-store.
 
@@ -45,7 +49,8 @@ stop the preview, delete only `.runtime/preview/access.json`, and start again.
 - `npm run preview:test`: no anonymous upstream requests, valid authentication,
   protected control route, origin isolation, CSRF denial, header stripping,
   preserved If-Match, body limit, and unavailable-origin response.
-- Check the public URL returns 401 without credentials and 200 with credentials.
+- Check `/lab/galton` returns 200 without credentials and requests no private API.
+- Check profile endpoints return 401 without credentials and 200 with credentials.
 - Check authenticated `/api/v1/health/ready` and `/lab/galton` through the public
   hostname. Local health alone is not evidence of tunnel availability.
 

@@ -20,8 +20,15 @@ const queryClient = new QueryClient({
 
 const router = createBrowserRouter([
   {
+    path: "/lab/galton",
+    lazy: async () => {
+      const { GaltonLabRoute } = await import("../features/galton/GaltonLabRoute");
+      return { Component: GaltonLabRoute };
+    },
+  },
+  {
     path: "/",
-    element: <AppShell />,
+    element: <ProfileStateProvider><AppShell /></ProfileStateProvider>,
     children: [
       { index: true, element: <TodayPage /> },
       { path: "learn", element: <LearnPage /> },
@@ -35,13 +42,6 @@ const router = createBrowserRouter([
       { path: "practice", element: <Navigate to="/practice/flashcards" replace /> },
       { path: "practice/flashcards", element: <FlashcardsPage /> },
       { path: "simulate", element: <SimulatePage /> },
-      {
-        path: "lab/galton",
-        lazy: async () => {
-          const { GaltonLabPage } = await import("../features/galton/GaltonLabPage");
-          return { Component: GaltonLabPage };
-        },
-      },
       { path: "profile", element: <ProfilePage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
@@ -52,9 +52,7 @@ export function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ProfileStateProvider>
-          <RouterProvider router={router} />
-        </ProfileStateProvider>
+        <RouterProvider router={router} />
       </QueryClientProvider>
     </ErrorBoundary>
   );

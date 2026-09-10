@@ -15,7 +15,13 @@ export function createPreviewGateway({ origin, username, password, status = () =
     res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
     const fail = (code, message) => { res.writeHead(code, { "Content-Type": "text/plain; charset=utf-8" }); res.end(message); };
-    if (!timingSafeEqual(digest(req.headers.authorization ?? ""), expected)) {
+    const path = (req.url ?? "").split("?")[0];
+    if (["GET", "HEAD"].includes(req.method) && path === "/favicon.ico") { res.writeHead(204); res.end(); return; }
+    const publicLab = ["GET", "HEAD"].includes(req.method) && (
+      path === "/lab/galton" || path === "/lab/galton/" ||
+      /^\/assets\/[A-Za-z0-9][A-Za-z0-9_.-]*\.(?:js|css|woff2?|png|jpg|webp|svg|ico)$/.test(path)
+    );
+    if (!publicLab && !timingSafeEqual(digest(req.headers.authorization ?? ""), expected)) {
       res.setHeader("WWW-Authenticate", 'Basic realm="getOPS private preview", charset="UTF-8"');
       fail(401, "Sign in to getOPS with your preview credentials.");
       return;

@@ -30,6 +30,17 @@ test("private preview protects HTML, API, and control routes", async (t) => {
   }
   assert.equal((await fetch(base, { headers: { authorization: "Basic bad" } })).status, 401);
   assert.equal(requests, 0);
+  assert.equal((await fetch(base + "/favicon.ico")).status, 204);
+
+  for (const path of ["/lab/galton", "/lab/galton/?seed=42", "/assets/GaltonLabRoute-abc.js", "/assets/index-abc.css"]) {
+    const response = await fetch(base + path);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("www-authenticate"), null);
+  }
+  for (const path of ["/assets/index.js.map", "/assets/../api/v1/profiles/local/state", "/api/v1/health/ready", "/profile"]) {
+    assert.equal((await fetch(base + path)).status, 401);
+  }
+  assert.equal((await fetch(base + "/lab/galton", { method: "POST", body: "{}" })).status, 401);
 
   const response = await fetch(base + "/api/v1/profiles/local/state?test=1", { headers: { authorization, cookie: "secret=private", "x-forwarded-for": "spoofed", "if-match": '"state-local-r8"' } });
   assert.equal(response.status, 200);

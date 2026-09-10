@@ -13,6 +13,8 @@ try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   const page = await context.newPage();
   const errors = [];
+  const apiRequests = [];
+  page.on("request", (request) => { if (new URL(request.url()).pathname.startsWith("/api/")) apiRequests.push(request.url()); });
   page.on("pageerror", (error) => errors.push(error.message));
   // Optional staging of the local release while the container image builds.
   if (process.env.GETOPS_QA_LOCAL_BUILD === "1") {
@@ -68,5 +70,6 @@ try {
   await page.getByRole("button", { name: "Replay run", exact: true }).click();
   await page.getByText("Population settled", { exact: true }).waitFor({ timeout: 30_000 });
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ desktop, mobile, complete: 50000, csv: "passed", settings: "restored", pause: "stable", reducedMotion: "passed", pageErrors: errors }, null, 2));
+  assert.deepEqual(apiRequests, [], "Public Galton must not load a private profile or depend on API readiness");
+  console.log(JSON.stringify({ desktop, mobile, complete: 50000, csv: "passed", settings: "restored", pause: "stable", reducedMotion: "passed", pageErrors: errors, apiRequests }, null, 2));
 } finally { await browser.close(); }
