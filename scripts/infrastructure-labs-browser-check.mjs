@@ -13,6 +13,8 @@ const cases = [
   { id: "cpu-quota", answers: [2, 0, 3] },
   { id: "edge-trigger", answers: [0, 3, 1] },
   { id: "audit-io", answers: [1, 0, 2] },
+  { id: "fd-exhaustion", answers: [2, 0, 1] },
+  { id: "lock-convoy", answers: [2, 1, 3] },
 ];
 await mkdir(directory, { recursive: true });
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
@@ -109,13 +111,26 @@ try {
     }
   }
   const saved = await persisted();
-  assert.equal(saved.state.xp, 170);
-  assert.equal(Object.keys(saved.state.infraLabs).length, 4);
+  assert.equal(saved.state.xp, 260);
+  assert.equal(Object.keys(saved.state.infraLabs).length, 6);
   for (const item of cases) {
     assert.equal(saved.state.infraLabs[item.id].inspected.length, 4);
     assert.equal(saved.state.infraLabs[item.id].decisions.length, 3);
   }
   assert.deepEqual(saved.state.infraLabs["rx-hotspot"].decisions[0].choices, [0, 1]);
+
+  await page.goto(`${base}/simulate/infrastructure`);
+  await page.getByRole("heading", { name: "Incident workbench", exact: true }).waitFor();
+  await page.getByRole("region", { name: "Decision review queue" }).getByRole("link").first().click();
+  await page.getByText("CORRECT / GUIDED / +5 XP").waitFor();
+  await page.getByRole("button", { name: "Rehearse this decision" }).click();
+  await page.getByText("REHEARSAL / NOT SAVED").waitFor();
+  for (let index = 0; index < 2; index++) await evidenceButtons().nth(index).click();
+  await options().nth(1).click();
+  await page.getByRole("button", { name: "Commit decision" }).click();
+  await page.getByText("CORRECT / FIRST TRY", { exact: true }).waitFor();
+  assert.deepEqual((await persisted()).state, saved.state);
+  await page.getByRole("button", { name: "End rehearsal" }).click();
 
   await page.goto(`${base}/simulate/infrastructure/edge-trigger?step=1&focus=1`);
   await page.getByRole("region", { name: "Investigation decision" }).waitFor();
@@ -142,11 +157,11 @@ try {
   await page.getByRole("heading", { name: "Investigation not found" }).waitFor();
   await page.goto(base);
   await page.getByRole("heading", { name: "Operator command center" }).waitFor();
-  assert.equal(await page.locator(".daily-evidence-kpi strong").textContent(), "12 / 5");
-  await page.getByRole("link", { name: "4 / 4 investigations reviewed" }).waitFor();
+  assert.equal(await page.locator(".daily-evidence-kpi strong").textContent(), "18 / 5");
+  await page.getByRole("link", { name: "6 / 6 investigations reviewed" }).waitFor();
   await page.goto(`${base}/profile`);
   await page.getByRole("heading", { name: "Operator profile" }).waitFor();
-  await page.getByRole("link", { name: "4 / 4 investigations reviewed" }).waitFor();
+  await page.getByRole("link", { name: "6 / 6 investigations reviewed" }).waitFor();
   await page.goto(`${base}/learn/infrastructure?stage=Execution&status=unfinished&q=I%2FO`);
   await page.getByRole("heading", { name: "Understand the whole path." }).waitFor();
   assert.equal(await page.getByRole("combobox", { name: "Filter module stage" }).inputValue(), "Execution");
@@ -156,7 +171,7 @@ try {
   await page.getByRole("heading", { name: "Understand the whole path." }).waitFor();
   assert.equal(await page.getByRole("textbox", { name: "Find infrastructure module" }).inputValue(), "I/O");
   assert.deepEqual(errors, []);
-  console.log(JSON.stringify({ profile, investigations: 4, decisions: 12, evidencePanels: 16, xp: saved.state.xp, persisted: true, failedSaveRetry: "passed", explicitNext: "passed", rehearsal: "unchanged", responsive: "320/390/768/1440", pageErrors: errors, screenshots: directory }, null, 2));
+  console.log(JSON.stringify({ profile, investigations: 6, decisions: 18, evidencePanels: 24, xp: saved.state.xp, persisted: true, failedSaveRetry: "passed", explicitNext: "passed", rehearsal: "unchanged", responsive: "320/390/768/1440", pageErrors: errors, screenshots: directory }, null, 2));
 } catch (error) {
   console.error(error);
   process.exitCode = 1;

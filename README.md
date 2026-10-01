@@ -46,11 +46,13 @@ Infrastructure multiple-choice checkpoints and investigations are client-scored 
 validated for shape by the API. Their XP is a practice incentive, not a proctored
 assessment. See [Systems and infrastructure](docs/infrastructure-path.md).
 
-The Linux track contains eight modules, 32 checkpoints and four evidence-gated
+The Linux track contains eight modules, 32 checkpoints and six evidence-gated
 investigations: receive-path loss, CPU quotas, edge-triggered I/O and audit
-durability. Open `/learn/infrastructure` for the path or
+durability, descriptor exhaustion and lock contention. Open `/learn/infrastructure` for the path or
 `/simulate/infrastructure` for the incident workbench. Both use the existing
-C++ API and PostgreSQL profile storage.
+C++ API and PostgreSQL profile storage. The workbench includes searchable
+progress filters, a decision-review queue and saved incident notebooks with
+cross-tab conflict protection.
 
 ## Run The Stack
 

@@ -13,8 +13,8 @@ freshness, correctness and incident discipline.
 - Eight interview prompts and model answers.
 - A six-boundary packet explorer with four synthetic incident states.
 - Primary references to Linux kernel documentation and Linux man-pages.
-- Four investigations at `/simulate/infrastructure`, with 16 inspectable
-  evidence panels and 12 scored operational decisions.
+- Six investigations at `/simulate/infrastructure`, with 24 inspectable
+  evidence panels and 18 scored operational decisions.
 
 All modules are accessible. Prerequisites are recommendations, not hidden locks.
 Examples are illustrative, not company infrastructure or actual customer data.
@@ -23,7 +23,7 @@ latency-sensitive service: the lesson explicitly requires controlled use.
 
 ## Persistence and scoring
 
-`infraRead`, `infraAnswers` and `infraLabs` extend the existing versioned profile JSON, stored
+`infraRead`, `infraAnswers`, `infraLabs` and `infraLabNotes` extend the existing versioned profile JSON, stored
 through the C++ API in PostgreSQL. No database migration is required. Existing
 trading flashcards and their server rubric remain unchanged.
 
@@ -48,8 +48,9 @@ credit. Incomplete guesses do not count toward that target.
 
 ## Incident workbench
 
-The four investigations cover RX/IRQ hot spots, cgroup CPU throttling, an
-edge-triggered socket reader and a blocking audit durability path. Each case
+The six investigations cover RX/IRQ hot spots, cgroup CPU throttling, an
+edge-triggered socket reader, a blocking audit durability path, descriptor
+exhaustion and lock contention. Each case
 has a synthetic latency timeline, four command/telemetry excerpts, and three
 decisions: locate the boundary, select an authorized response, and validate
 recovery. Every option has specific feedback and the debrief includes a model
@@ -69,11 +70,39 @@ first unfinished checkpoint; the Needs review filter links to the first guided
 or revealed checkpoint. These are self-study records, not verified
 professional readiness scores.
 
+The workbench root is a searchable case library with boundary and progress
+filters stored in the URL. A targeted review queue links directly to guided or
+revealed decisions. Reviewed cases open their debrief instead of restarting.
+Each completed decision can start a local rehearsal from that point, preserving
+the first saved evidence. Focus mode places the evidence and decision alongside
+each other on wide screens; the signal context is collapsible.
+
+## Incident notebooks
+
+Each case has four saved fields: observations, hypothesis, action and recovery.
+These are personal drafts, not machine-graded answers. They do not award XP,
+mark a case started, or alter decision results. Fields are limited to 1,200
+UTF-16 units, consistently with browser maxlength; Unicode text is supported.
+Rehearsal shows the saved notebook read-only.
+
+Saving is explicit. In-app navigation to another page offers keep editing,
+save and leave, or discard and leave. A browser reload/close registers the
+standard unsaved-change warning, whose display remains browser-controlled.
+Failed writes retain the draft. A baseline check refuses to overwrite notes
+changed in another tab, including on an automatic revision retry. Copy/download
+can preserve the local draft; discard plus reload adopts the saved version.
+Reload shares the profile write queue and refreshes its cached revision.
+
+Notebook export is plain text and labeled as a synthetic training record.
+Notes contain no production credentials or customer data by default; the app
+warns users not to add confidential content.
+
 ## Organization
 
 - `apps/web/src/content/infrastructure/`: typed lesson catalog and trace data.
 - `apps/web/src/domain/infrastructure.ts`: deterministic grading and progress.
 - `apps/web/src/domain/infrastructure-labs.ts`: investigation sequencing and evidence.
+- `apps/web/src/domain/infrastructure-notes.ts`: bounded drafts, conflict checks and export.
 - `apps/web/src/features/infrastructure/`: path, reader, packet explorer and quiz.
 - `apps/web/src/styles/infrastructure.css`: scoped responsive reader styles.
 - `apps/web/src/styles/investigations.css`: evidence desk, focus and debrief layouts.
@@ -93,6 +122,7 @@ npm run api:test
 GETOPS_API_ORIGIN=http://127.0.0.1:8766 npm run web:dev
 GETOPS_QA_URL=http://127.0.0.1:5173 node scripts/infrastructure-browser-check.mjs
 GETOPS_QA_URL=http://127.0.0.1:5173 node scripts/infrastructure-labs-browser-check.mjs
+GETOPS_QA_URL=http://127.0.0.1:5173 node scripts/infrastructure-notebook-browser-check.mjs
 ```
 
 The browser check requires Playwright and Chrome. Set `GETOPS_PLAYWRIGHT_MODULE`
@@ -102,6 +132,8 @@ profile unchanged. It verifies persistence, explicit advancement, failed-save
 retry, no rehearsal XP, navigation, responsive overflow and reduced motion.
 Screenshots go to ignored `.runtime/qa/`. Test profiles are left identifiable in
 the local database; the test never deletes the operator's data.
-The investigation check uses its own `labs-qa-*` profile, completes all four
+The investigation check uses its own `labs-qa-*` profile, completes all six
 cases, and exercises blocked deep links, evidence gates, failed-save retry,
 rehearsal isolation, responsive layout and daily/profile integration.
+Notebook QA uses `notes-qa-*` profiles and two browser tabs to verify saved
+drafts, failed saves, conflict protection, safe navigation, exports and layout.
