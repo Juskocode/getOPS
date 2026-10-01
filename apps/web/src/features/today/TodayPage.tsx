@@ -12,6 +12,7 @@ import { Link } from "react-router";
 
 import { flashcards, flashcardsById } from "../../content/catalog";
 import { branches } from "../../domain/branches";
+import { dailyInfrastructureReviews } from "../../domain/infrastructure";
 import { branchLearningMeta } from "../../domain/learning-path";
 import { rankProgress } from "../../domain/ranks";
 import { latestAttempts } from "../../state/evidence";
@@ -24,9 +25,11 @@ export function TodayPage() {
   const attempts = [...latest.values()];
   const today = new Date().toLocaleDateString("en-CA");
   const dailyTarget = 5;
-  const dailyAttempts = (state.flashAttempts ?? []).filter(
+  const dailyRecall = (state.flashAttempts ?? []).filter(
     (attempt) => new Date(attempt.createdAt).toLocaleDateString("en-CA") === today,
   ).length;
+  const dailyInfrastructure = dailyInfrastructureReviews(state, new Date());
+  const dailyAttempts = dailyRecall + dailyInfrastructure;
   const dailyProgress = Math.min(100, Math.round((dailyAttempts / dailyTarget) * 100));
   const strong = attempts.filter((attempt) => attempt.score >= 80).length;
   const average = attempts.length

@@ -41,3 +41,12 @@ export function infrastructureProgress(state: ProgressState) {
     )) ?? infrastructureLessons[0]!,
   };
 }
+
+export function dailyInfrastructureReviews(state: ProgressState, date: Date) {
+  const day = date.toLocaleDateString("en-CA");
+  return Object.entries(state.infraAnswers ?? {}).filter(([id, answer]) => {
+    const question = infraQuestionById.get(id);
+    return question && checkpointResult(question, answer.choices).complete &&
+      new Date(answer.updatedAt).toLocaleDateString("en-CA") === day;
+  }).length;
+}

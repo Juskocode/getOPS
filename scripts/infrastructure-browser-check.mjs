@@ -106,6 +106,7 @@ try {
   await page.goto(base);
   await page.getByRole("heading", { name: "Operator command center" }).waitFor();
   await page.getByRole("region", { name: "Infrastructure progress" }).waitFor();
+  assert.equal(await page.locator(".daily-evidence-kpi strong").textContent(), "2 / 5");
   await page.screenshot({ path: resolve(directory, "infrastructure-today.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${base}/profile`);

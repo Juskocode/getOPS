@@ -40,6 +40,9 @@ Rehearsal is local to the open question and never replaces the first saved
 evidence or adds XP. The overview distinguishes first-try, guided, and revealed
 results; reviewed does not mean mastered. Failed writes keep the current
 selection available for retry.
+Completed checkpoints also count toward the daily practice target on the local
+calendar day they were completed, including revealed reviews without correctness
+credit. Incomplete guesses do not count toward that target.
 
 ## Organization
 
