@@ -14,6 +14,7 @@ import { branchById, branches } from "../../domain/branches";
 import { branchLearningMeta, learningStages } from "../../domain/learning-path";
 import { latestAttempts } from "../../state/evidence";
 import { useProfileState } from "../../state/profile-state";
+import { LearningTracks } from "./LearningTracks";
 
 export function LearnPage() {
   const { state } = useProfileState();
@@ -65,6 +66,7 @@ export function LearnPage() {
 
   return (
     <div className="page learn-page">
+      <LearningTracks active="operations" />
       <header className="page-header">
         <div>
           <span className="eyebrow">LEARN / COMMAND PATH</span>

@@ -3148,6 +3148,18 @@ textarea {
   font-size: 11px;
 }
 
+.standalone-lab { min-height: 100dvh; }
+.standalone-lab-header { display: flex; align-items: center; gap: 20px; padding: 14px 24px; border-bottom: 1px solid var(--line); }
+.standalone-lab-header > span { color: var(--muted); font-size: 12px; flex: 1; }
+.standalone-lab-brand { display: inline-flex; gap: 10px; align-items: center; color: var(--text); text-decoration: none; }
+.standalone-lab-brand svg { color: var(--amber); }
+.standalone-lab main { max-width: 1600px; margin: 0 auto; padding: 28px 24px 48px; }
+@media (max-width: 600px) {
+  .standalone-lab-header { padding: 12px; gap: 10px; }
+  .standalone-lab-header > span { display: none; }
+  .standalone-lab-header > .button { margin-left: auto; }
+  .standalone-lab main { padding: 20px 12px 32px; }
+}
 .galton-export-actions { flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
 .galton-settings-status { margin: 12px 16px 0; color: var(--muted); font-size: 11px; }
 .galton-bin-tape > header { flex-wrap: wrap; }

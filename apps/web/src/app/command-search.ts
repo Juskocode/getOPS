@@ -4,12 +4,15 @@ import {
   FlaskConical,
   GraduationCap,
   Layers3,
+  Network,
   RadioTower,
   Siren,
   type LucideIcon,
 } from "lucide-react";
 
 import { flashcards } from "../content/catalog";
+import { infrastructureLessons } from "../content/infrastructure/catalog";
+import { infrastructureLabs } from "../content/infrastructure/labs";
 import { branchById, branches } from "../domain/branches";
 import { scenarioBriefings } from "../domain/scenario-briefings";
 
@@ -28,6 +31,10 @@ export interface WorkspaceCommand {
 
 const destinationCommands: WorkspaceCommand[] = [
   {
+    id: "destination-investigations", kind: "destination", label: "Incident workbench", meta: "Systems investigations",
+    to: "/simulate/infrastructure", icon: FlaskConical, searchText: "incident workbench investigation library notebook systems simulations",
+  },
+  {
     id: "destination-today",
     kind: "destination",
     label: "Operator command center",
@@ -44,6 +51,16 @@ const destinationCommands: WorkspaceCommand[] = [
     to: "/learn",
     icon: BookOpen,
     searchText: "learn roadmap path guides curriculum operational knowledge",
+  },
+  {
+    id: "destination-infrastructure",
+    kind: "destination",
+    label: "Systems & infrastructure",
+    meta: "Linux learning path",
+    to: "/learn/infrastructure",
+    icon: Network,
+    color: "#63d6a0",
+    searchText: "systems infrastructure linux unix nic io threads network packet path",
   },
   {
     id: "destination-practice",
@@ -128,6 +145,19 @@ export const workspaceCommands = [
   ...guideCommands,
   ...recallCommands,
   ...scenarioCommands,
+  ...infrastructureLabs.map((lab): WorkspaceCommand => ({ id: `investigation-${lab.id}`, kind: "scenario", label: lab.title,
+    meta: "Infrastructure investigation", to: `/simulate/infrastructure/${lab.id}`, icon: FlaskConical, color: "#f1ca61",
+    searchText: `${lab.title} ${lab.subtitle} ${lab.symptom} investigation infrastructure linux` })),
+  ...infrastructureLessons.map((lesson): WorkspaceCommand => ({
+    id: `infra-${lesson.id}`,
+    kind: "guide",
+    label: lesson.title,
+    meta: `Infrastructure / ${lesson.stage}`,
+    to: `/learn/infrastructure/${lesson.id}`,
+    icon: Network,
+    color: "#63d6a0",
+    searchText: `${lesson.title} ${lesson.subtitle} ${lesson.concepts.map((concept) => `${concept.title} ${concept.body}`).join(" ")}`,
+  })),
 ];
 
 function normalize(value: string): string {
@@ -144,7 +174,7 @@ function commandScore(command: WorkspaceCommand, query: string, tokens: string[]
   if (label.includes(query)) return 10;
   if (tokens.every((token) => label.includes(token))) return 15;
   if (meta.includes(query)) return 20;
-  return 30 + (command.kind === "recall" ? 2 : 0);
+  return 30 + (command.kind === "recall" ? 2 : command.kind === "scenario" ? 1 : 0);
 }
 
 export function searchWorkspaceCommands(query: string, limit = 10): WorkspaceCommand[] {

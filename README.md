@@ -38,10 +38,21 @@ docs/                     Architecture, API, and operational contracts
 legacy/                   Transitional browser and Python/SQLite source
 ```
 
-The server is authoritative for durable recall evidence. It re-scores rubric v2
+The server is authoritative for durable written-recall evidence. It re-scores rubric v2
 attempts before accepting a state revision, verifies revision ownership inside a
 PostgreSQL transaction, and records bounded state history. The browser owns
-navigation and drafts, but cannot grant itself durable score evidence.
+navigation and drafts, but cannot grant itself durable written-recall score evidence.
+Infrastructure multiple-choice checkpoints and investigations are client-scored self-study evidence,
+validated for shape by the API. Their XP is a practice incentive, not a proctored
+assessment. See [Systems and infrastructure](docs/infrastructure-path.md).
+
+The Linux track contains eight modules, 32 checkpoints and six evidence-gated
+investigations: receive-path loss, CPU quotas, edge-triggered I/O and audit
+durability, descriptor exhaustion and lock contention. Open `/learn/infrastructure` for the path or
+`/simulate/infrastructure` for the incident workbench. Both use the existing
+C++ API and PostgreSQL profile storage. The workbench includes searchable
+progress filters, a decision-review queue and saved incident notebooks with
+cross-tab conflict protection.
 
 ## Run The Stack
 
@@ -59,6 +70,21 @@ contains:
 - `api`: the non-root C++ service on the private Compose network.
 - `db`: PostgreSQL with a named volume and loopback-only maintenance port.
 - `migrate`: a one-shot forward migration job.
+
+On a memory-constrained container VM, build services sequentially before starting:
+
+```bash
+./scripts/compose.sh build api
+./scripts/compose.sh build edge
+./scripts/compose.sh up -d --no-build
+```
+
+The C++ image defaults to one compile job. On larger machines, override with
+`./scripts/compose.sh build --build-arg GETOPS_BUILD_JOBS=2 api`. Dependencies
+use version-pinned archives with SHA-256 verification and bounded downloads.
+Check available VM memory before building alongside other containers. Restarting
+Colima affects all projects in that VM; never delete database volumes to recover
+a stalled build.
 
 Use a different port and project name for an isolated rehearsal:
 

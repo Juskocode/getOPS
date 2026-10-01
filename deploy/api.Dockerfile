@@ -1,5 +1,7 @@
 FROM debian:bookworm-slim AS builder
 
+ARG GETOPS_BUILD_JOBS=1
+
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
         build-essential \
@@ -16,7 +18,7 @@ COPY services/api ./services/api
 RUN cmake -S . -B /build \
       -DBUILD_TESTING=OFF \
       -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build /build --parallel --target getops_api
+    && cmake --build /build --parallel "${GETOPS_BUILD_JOBS}" --target getops_api
 
 FROM debian:bookworm-slim
 

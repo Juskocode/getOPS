@@ -18,13 +18,45 @@ const queryClient = new QueryClient({
   },
 });
 
+function RouteLoading() {
+  return (
+    <div className="boot-screen" role="status" aria-live="polite">
+      <div className="boot-mark" aria-hidden="true" />
+      <strong>Opening getOPS</strong>
+    </div>
+  );
+}
+
 const router = createBrowserRouter([
   {
+    path: "/lab/galton",
+    HydrateFallback: RouteLoading,
+    lazy: async () => {
+      const { GaltonLabRoute } = await import("../features/galton/GaltonLabRoute");
+      return { Component: GaltonLabRoute };
+    },
+  },
+  {
     path: "/",
-    element: <AppShell />,
+    HydrateFallback: RouteLoading,
+    element: <ProfileStateProvider><AppShell /></ProfileStateProvider>,
     children: [
       { index: true, element: <TodayPage /> },
       { path: "learn", element: <LearnPage /> },
+      {
+        path: "learn/infrastructure",
+        lazy: async () => {
+          const { InfrastructurePage } = await import("../features/infrastructure/InfrastructurePage");
+          return { Component: InfrastructurePage };
+        },
+      },
+      {
+        path: "learn/infrastructure/:lessonId",
+        lazy: async () => {
+          const { InfrastructureLessonPage } = await import("../features/infrastructure/InfrastructureLessonPage");
+          return { Component: InfrastructureLessonPage };
+        },
+      },
       {
         path: "learn/:branchId",
         lazy: async () => {
@@ -36,10 +68,10 @@ const router = createBrowserRouter([
       { path: "practice/flashcards", element: <FlashcardsPage /> },
       { path: "simulate", element: <SimulatePage /> },
       {
-        path: "lab/galton",
+        path: "simulate/infrastructure/:labId?",
         lazy: async () => {
-          const { GaltonLabPage } = await import("../features/galton/GaltonLabPage");
-          return { Component: GaltonLabPage };
+          const { InfrastructureLabPage } = await import("../features/infrastructure/InfrastructureLabPage");
+          return { Component: InfrastructureLabPage };
         },
       },
       { path: "profile", element: <ProfilePage /> },
@@ -52,9 +84,7 @@ export function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ProfileStateProvider>
-          <RouterProvider router={router} />
-        </ProfileStateProvider>
+        <RouterProvider router={router} />
       </QueryClientProvider>
     </ErrorBoundary>
   );

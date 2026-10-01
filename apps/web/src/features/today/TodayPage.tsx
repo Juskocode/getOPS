@@ -12,10 +12,13 @@ import { Link } from "react-router";
 
 import { flashcards, flashcardsById } from "../../content/catalog";
 import { branches } from "../../domain/branches";
+import { dailyInfrastructureReviews } from "../../domain/infrastructure";
+import { dailyLabReviews } from "../../domain/infrastructure-labs";
 import { branchLearningMeta } from "../../domain/learning-path";
 import { rankProgress } from "../../domain/ranks";
 import { latestAttempts } from "../../state/evidence";
 import { useProfileState } from "../../state/profile-state";
+import { InfrastructureProgress } from "../infrastructure/InfrastructureProgress";
 
 export function TodayPage() {
   const { state } = useProfileState();
@@ -23,9 +26,11 @@ export function TodayPage() {
   const attempts = [...latest.values()];
   const today = new Date().toLocaleDateString("en-CA");
   const dailyTarget = 5;
-  const dailyAttempts = (state.flashAttempts ?? []).filter(
+  const dailyRecall = (state.flashAttempts ?? []).filter(
     (attempt) => new Date(attempt.createdAt).toLocaleDateString("en-CA") === today,
   ).length;
+  const dailyInfrastructure = dailyInfrastructureReviews(state, new Date());
+  const dailyAttempts = dailyRecall + dailyInfrastructure + dailyLabReviews(state, new Date());
   const dailyProgress = Math.min(100, Math.round((dailyAttempts / dailyTarget) * 100));
   const strong = attempts.filter((attempt) => attempt.score >= 80).length;
   const average = attempts.length
@@ -134,6 +139,8 @@ export function TodayPage() {
           </div>
         </section>
       ) : null}
+
+      <InfrastructureProgress />
 
       <div className="two-column today-columns">
         <section className="work-panel">

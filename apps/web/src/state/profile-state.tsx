@@ -81,6 +81,7 @@ interface ProfileStateContextValue {
   isSaving: boolean;
   lastError: string;
   save: (update: (state: ProgressState) => ProgressState) => Promise<ProfileStateResponse>;
+  reload: () => Promise<ProfileStateResponse>;
   clearError: () => void;
 }
 
@@ -139,6 +140,19 @@ export function ProfileStateProvider({ children }: PropsWithChildren) {
 
   const clearError = useCallback(() => setLastError(""), []);
 
+  const reload = useCallback(() => {
+    // Share the write queue so refreshing cannot replace a newer in-flight save.
+    const task = saveQueue.current.catch(() => undefined).then(async () => {
+      const current = queryClient.getQueryData<LoadedProfile>(PROFILE_QUERY_KEY);
+      const loaded = normalizeProfile(await apiClient.loadProfile(current?.profile));
+      queryClient.setQueryData(PROFILE_QUERY_KEY, loaded);
+      setLastError("");
+      return loaded;
+    });
+    saveQueue.current = task;
+    return task;
+  }, [queryClient]);
+
   const value = useMemo<ProfileStateContextValue | null>(() => {
     if (!profileQuery.data?.state) return null;
     return {
@@ -147,9 +161,10 @@ export function ProfileStateProvider({ children }: PropsWithChildren) {
       isSaving,
       lastError,
       save,
+      reload,
       clearError,
     };
-  }, [clearError, isSaving, lastError, profileQuery.data, save]);
+  }, [clearError, isSaving, lastError, profileQuery.data, reload, save]);
 
   if (profileQuery.isPending) {
     return (

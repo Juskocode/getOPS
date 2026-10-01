@@ -72,7 +72,86 @@ int main() {
   };
   getops::StateValidator::validate(state);
 
+  auto infra = nlohmann::json{
+      {"infraRead", nlohmann::json::array({"nic", "sockets"})},
+      {"infraAnswers", {{"nic-1", {{"choices", nlohmann::json::array({0, 1})},
+                                  {"updatedAt", "2026-10-01T10:20:30.000Z"}}}}},
+  };
+  getops::StateValidator::validate(infra);
+  for (const auto& choices : {nlohmann::json::array({0, 0}), nlohmann::json::array({4}),
+                              nlohmann::json::array(), nlohmann::json::array({"0"}),
+                              nlohmann::json::array({0, 1, 2, 3})}) {
+    auto bad = infra;
+    bad["infraAnswers"]["nic-1"]["choices"] = choices;
+    expect_domain_error([&bad]() { getops::StateValidator::validate(bad); }, "state_invalid");
+  }
+  auto bad_lesson = infra;
+  bad_lesson["infraRead"] = nlohmann::json::array({"nic", "nic"});
+  expect_domain_error([&bad_lesson]() { getops::StateValidator::validate(bad_lesson); }, "state_invalid");
+  bad_lesson["infraRead"] = nlohmann::json::array({"unknown"});
+  expect_domain_error([&bad_lesson]() { getops::StateValidator::validate(bad_lesson); }, "state_invalid");
+  auto bad_question = infra;
+  bad_question["infraAnswers"]["nic-5"] = infra["infraAnswers"]["nic-1"];
+  expect_domain_error([&bad_question]() { getops::StateValidator::validate(bad_question); }, "state_invalid");
+  auto bad_time = infra;
+  bad_time["infraAnswers"]["nic-1"]["updatedAt"] = "yesterday";
+  expect_domain_error([&bad_time]() { getops::StateValidator::validate(bad_time); }, "state_invalid");
+
   const auto catalog = getops::Catalog::load(GETOPS_TEST_CATALOG);
+  auto lab_state = nlohmann::json::object();
+  lab_state["infraLabs"]["rx-hotspot"] = {
+      {"inspected", nlohmann::json::array({0, 1})},
+      {"decisions", nlohmann::json::array({{{"choices", nlohmann::json::array({0, 1})}, {"updatedAt", "2026-10-01T12:00:00Z"}}})},
+      {"updatedAt", "2026-10-01T12:00:00Z"}};
+  getops::StateValidator::validate(lab_state);
+  for (const auto& inspected : {nlohmann::json::array({0, 0}), nlohmann::json::array({4}), nlohmann::json::array({"0"})}) {
+    auto bad = lab_state;
+    bad["infraLabs"]["rx-hotspot"]["inspected"] = inspected;
+    expect_domain_error([&bad]() { getops::StateValidator::validate(bad); }, "state_invalid");
+  }
+  for (const auto& choices : {nlohmann::json::array(), nlohmann::json::array({0, 0}), nlohmann::json::array({4}), nlohmann::json::array({0, 1, 2, 3})}) {
+    auto bad = lab_state;
+    bad["infraLabs"]["rx-hotspot"]["decisions"][0]["choices"] = choices;
+    expect_domain_error([&bad]() { getops::StateValidator::validate(bad); }, "state_invalid");
+  }
+  auto bad_lab = lab_state;
+  bad_lab["infraLabs"]["unknown"] = lab_state["infraLabs"]["rx-hotspot"];
+  expect_domain_error([&bad_lab]() { getops::StateValidator::validate(bad_lab); }, "state_invalid");
+  bad_lab = lab_state;
+  bad_lab["infraLabs"]["rx-hotspot"]["updatedAt"] = "yesterday";
+  expect_domain_error([&bad_lab]() { getops::StateValidator::validate(bad_lab); }, "state_invalid");
+  bad_lab = lab_state;
+  bad_lab["infraLabs"]["rx-hotspot"]["decisions"] = nlohmann::json::array({
+      lab_state["infraLabs"]["rx-hotspot"]["decisions"][0], lab_state["infraLabs"]["rx-hotspot"]["decisions"][0],
+      lab_state["infraLabs"]["rx-hotspot"]["decisions"][0], lab_state["infraLabs"]["rx-hotspot"]["decisions"][0]});
+  expect_domain_error([&bad_lab]() { getops::StateValidator::validate(bad_lab); }, "state_invalid");
+  auto note_state = nlohmann::json::object();
+  note_state["infraLabNotes"]["fd-exhaustion"] = {
+      {"observations", "Local EMFILE; existing sessions still receive."}, {"hypothesis", ""},
+      {"action", "Escalate and follow the authorized recovery path."}, {"recovery", ""},
+      {"updatedAt", "2026-10-01T12:00:00Z"}};
+  getops::StateValidator::validate(note_state);
+  auto unicode_note = note_state;
+  std::string accented;
+  for (int i = 0; i < 1200; ++i) accented += "\xc3\xa1";
+  unicode_note["infraLabNotes"]["fd-exhaustion"]["observations"] = accented;
+  getops::StateValidator::validate(unicode_note);
+  unicode_note["infraLabNotes"]["fd-exhaustion"]["observations"] = accented + "a";
+  expect_domain_error([&unicode_note]() { getops::StateValidator::validate(unicode_note); }, "state_invalid");
+  auto bad_note = note_state;
+  bad_note["infraLabNotes"]["fd-exhaustion"]["action"] = std::string(1201, 'x');
+  expect_domain_error([&bad_note]() { getops::StateValidator::validate(bad_note); }, "state_invalid");
+  bad_note = note_state;
+  bad_note["infraLabNotes"]["fd-exhaustion"].erase("recovery");
+  expect_domain_error([&bad_note]() { getops::StateValidator::validate(bad_note); }, "state_invalid");
+  bad_note = note_state;
+  bad_note["infraLabNotes"]["unknown"] = bad_note["infraLabNotes"]["fd-exhaustion"];
+  expect_domain_error([&bad_note]() { getops::StateValidator::validate(bad_note); }, "state_invalid");
+  for (const auto* id : {"fd-exhaustion", "lock-convoy"}) {
+    auto advanced_lab = nlohmann::json::object();
+    advanced_lab["infraLabs"][id] = lab_state["infraLabs"]["rx-hotspot"];
+    getops::StateValidator::validate(advanced_lab);
+  }
   const getops::RecallScorer scorer(catalog);
   auto authoritative = nlohmann::json(scorer.validate(
       "f01",

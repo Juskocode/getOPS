@@ -11,7 +11,7 @@ import {
   Server,
 } from "lucide-react";
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 
 import { apiClient } from "../api/client";
 import { rankProgress } from "../domain/ranks";
@@ -58,16 +58,17 @@ export function AppShell() {
 
   return (
     <div className="app-frame">
+      <a className="skip-workspace" href="#workspace">Skip to content</a>
       <header className="product-bar">
-        <div className="brand-lockup">
+        <Link className="brand-lockup" to="/" aria-label="getOPS home">
           <span className="brand-icon" aria-hidden="true">
             <RadioTower size={20} />
           </span>
           <span>
             <strong>getOPS</strong>
-            <small>Trading operations command lab</small>
+            <small>Trading operations & systems engineering</small>
           </span>
-        </div>
+        </Link>
         <div className="product-actions">
           <CommandPalette />
           <div className="runtime-strip" aria-label="Runtime status">
@@ -119,7 +120,7 @@ export function AppShell() {
         </a>
       </aside>
 
-      <main className="workspace">
+      <main className="workspace" id="workspace" tabIndex={-1}>
         {lastError ? (
           <div className="global-notice" role="alert">
             <span>{lastError}</span>
@@ -132,8 +133,8 @@ export function AppShell() {
       </main>
 
       <footer className="save-footer">
-        <span className={isSaving ? "save-dot is-saving" : "save-dot"} />
-        {isSaving ? "Saving revision" : `Revision ${record.revision} synchronized`}
+        <span className={isSaving ? "save-dot is-saving" : lastError ? "save-dot has-error" : "save-dot"} />
+        {isSaving ? "Saving revision" : lastError ? "Changes not synchronized" : `Revision ${record.revision} synchronized`}
       </footer>
     </div>
   );

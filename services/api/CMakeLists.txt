@@ -4,9 +4,11 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 set(JSON_Install OFF CACHE INTERNAL "")
 FetchContent_Declare(
   nlohmann_json
-  GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG v3.12.0
-  GIT_SHALLOW TRUE
+  URL https://codeload.github.com/nlohmann/json/tar.gz/refs/tags/v3.12.0
+  URL_HASH SHA256=4b92eb0c06d10683f7447ce9406cb97cd4b453be18d7279320f7b2f025c10187
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  TLS_VERIFY TRUE
+  TIMEOUT 120
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
@@ -14,9 +16,11 @@ set(HTTPLIB_INSTALL OFF CACHE INTERNAL "")
 set(HTTPLIB_TEST OFF CACHE INTERNAL "")
 FetchContent_Declare(
   cpp_httplib
-  GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
-  GIT_TAG v0.50.1
-  GIT_SHALLOW TRUE
+  URL https://codeload.github.com/yhirose/cpp-httplib/tar.gz/refs/tags/v0.50.1
+  URL_HASH SHA256=3c23acaf0e37bf63cf1b747813b358063e2e40590a7f6418955031fe5eb173c0
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  TLS_VERIFY TRUE
+  TIMEOUT 120
 )
 FetchContent_MakeAvailable(cpp_httplib)
 

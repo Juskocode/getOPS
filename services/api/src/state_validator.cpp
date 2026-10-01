@@ -15,6 +15,9 @@ namespace {
 
 const std::regex kProfilePattern(R"(^[A-Za-z0-9_-]{1,40}$)");
 const std::regex kCardPattern(R"(^f(?:0[1-9]|[1-9][0-9]|1[0-4][0-9]|150)$)");
+const std::regex kInfraLessonPattern(R"(^(nic|sockets|event-loop|threads|memory|storage|unix|capstone)$)");
+const std::regex kInfraQuestionPattern(R"(^(nic|sockets|event-loop|threads|memory|storage|unix|capstone)-[1-4]$)");
+const std::regex kInfraLabPattern(R"(^(rx-hotspot|cpu-quota|edge-trigger|audit-io|fd-exhaustion|lock-convoy)$)");
 const std::regex kTimestampPattern(
     R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$)");
 
@@ -208,6 +211,93 @@ void StateValidator::validate(const nlohmann::json& state) {
   }
   if (state.contains("profileObjective")) {
     text(state, "profileObjective", 0, 160);
+  }
+
+  if (state.contains("infraRead")) {
+    const auto& read = state.at("infraRead");
+    if (!read.is_array() || read.size() > 8) {
+      invalid("infraRead must contain at most 8 lessons.");
+    }
+    std::unordered_set<std::string> lessons;
+    for (const auto& lesson : read) {
+      if (!lesson.is_string() ||
+          !std::regex_match(lesson.get<std::string>(), kInfraLessonPattern) ||
+          !lessons.insert(lesson.get<std::string>()).second) {
+        invalid("infraRead contains an invalid or duplicate lesson.");
+      }
+    }
+  }
+  if (state.contains("infraAnswers")) {
+    const auto& answers = state.at("infraAnswers");
+    if (!answers.is_object() || answers.size() > 32) {
+      invalid("infraAnswers must contain at most 32 checkpoints.");
+    }
+    for (const auto& [question, answer] : answers.items()) {
+      if (!std::regex_match(question, kInfraQuestionPattern) || !answer.is_object() ||
+          !answer.contains("choices") || !answer.at("choices").is_array() ||
+          answer.at("choices").empty() || answer.at("choices").size() > 3) {
+        invalid("Invalid infrastructure checkpoint evidence.");
+      }
+      std::unordered_set<int> choices;
+      for (const auto& choice : answer.at("choices")) {
+        if (!choice.is_number_integer() || choice < 0 || choice > 3 ||
+            !choices.insert(choice.get<int>()).second) {
+          invalid("Infrastructure choices must be distinct option indices from 0 to 3.");
+        }
+      }
+      if (!std::regex_match(text(answer, "updatedAt", 1, 40), kTimestampPattern)) {
+        invalid("Infrastructure updatedAt must be an RFC 3339 timestamp.");
+      }
+    }
+  }
+
+  if (state.contains("infraLabs")) {
+    const auto& labs = state.at("infraLabs");
+    if (!labs.is_object() || labs.size() > 6) invalid("infraLabs must contain at most six investigations.");
+    for (const auto& [id, lab] : labs.items()) {
+      if (!std::regex_match(id, kInfraLabPattern) || !lab.is_object() ||
+          !lab.contains("inspected") || !lab.at("inspected").is_array() || lab.at("inspected").size() > 4 ||
+          !lab.contains("decisions") || !lab.at("decisions").is_array() || lab.at("decisions").size() > 3) {
+        invalid("Invalid infrastructure investigation.");
+      }
+      std::unordered_set<int> inspected;
+      for (const auto& item : lab.at("inspected")) {
+        if (!item.is_number_integer() || item < 0 || item > 3 || !inspected.insert(item.get<int>()).second) {
+          invalid("Investigation evidence IDs must be distinct indices from 0 to 3.");
+        }
+      }
+      if (!std::regex_match(text(lab, "updatedAt", 1, 40), kTimestampPattern)) invalid("Invalid investigation timestamp.");
+      for (const auto& decision : lab.at("decisions")) {
+        if (!decision.is_object() || !decision.contains("choices") || !decision.at("choices").is_array() ||
+            decision.at("choices").empty() || decision.at("choices").size() > 3) invalid("Invalid investigation decision.");
+        std::unordered_set<int> choices;
+        for (const auto& choice : decision.at("choices")) {
+          if (!choice.is_number_integer() || choice < 0 || choice > 3 || !choices.insert(choice.get<int>()).second) {
+            invalid("Investigation choices must be distinct option indices from 0 to 3.");
+          }
+        }
+        if (!std::regex_match(text(decision, "updatedAt", 1, 40), kTimestampPattern)) invalid("Invalid decision timestamp.");
+      }
+    }
+  }
+
+  if (state.contains("infraLabNotes")) {
+    const auto& notes = state.at("infraLabNotes");
+    if (!notes.is_object() || notes.size() > 6) invalid("Invalid investigation notebooks.");
+    for (const auto& [id, note] : notes.items()) {
+      if (!std::regex_match(id, kInfraLabPattern) || !note.is_object()) invalid("Invalid investigation notebook.");
+      for (const auto* field : {"observations", "hypothesis", "action", "recovery"}) {
+        const auto value = text(note, field, 0, 4800);
+        // JSON strings are valid UTF-8; match the browser's UTF-16 maxlength units.
+        std::size_t units = 0;
+        for (const char character : value) {
+          const auto byte = static_cast<unsigned char>(character);
+          if ((byte & 0xc0) != 0x80) units += byte >= 0xf0 ? 2 : 1;
+        }
+        if (units > 1200) invalid("Notebook fields exceed 1200 characters.");
+      }
+      if (!std::regex_match(text(note, "updatedAt", 1, 40), kTimestampPattern)) invalid("Invalid notebook timestamp.");
+    }
   }
 
   if (state.contains("flashDrafts")) {
