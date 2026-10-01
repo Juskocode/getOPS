@@ -12,6 +12,7 @@ import {
 
 import { flashcards } from "../content/catalog";
 import { infrastructureLessons } from "../content/infrastructure/catalog";
+import { infrastructureLabs } from "../content/infrastructure/labs";
 import { branchById, branches } from "../domain/branches";
 import { scenarioBriefings } from "../domain/scenario-briefings";
 
@@ -140,6 +141,9 @@ export const workspaceCommands = [
   ...guideCommands,
   ...recallCommands,
   ...scenarioCommands,
+  ...infrastructureLabs.map((lab): WorkspaceCommand => ({ id: `investigation-${lab.id}`, kind: "scenario", label: lab.title,
+    meta: "Infrastructure investigation", to: `/simulate/infrastructure/${lab.id}`, icon: FlaskConical, color: "#f1ca61",
+    searchText: `${lab.title} ${lab.subtitle} ${lab.symptom} investigation infrastructure linux` })),
   ...infrastructureLessons.map((lesson): WorkspaceCommand => ({
     id: `infra-${lesson.id}`,
     kind: "guide",
@@ -166,7 +170,7 @@ function commandScore(command: WorkspaceCommand, query: string, tokens: string[]
   if (label.includes(query)) return 10;
   if (tokens.every((token) => label.includes(token))) return 15;
   if (meta.includes(query)) return 20;
-  return 30 + (command.kind === "recall" ? 2 : 0);
+  return 30 + (command.kind === "recall" ? 2 : command.kind === "scenario" ? 1 : 0);
 }
 
 export function searchWorkspaceCommands(query: string, limit = 10): WorkspaceCommand[] {

@@ -1,7 +1,7 @@
 import type { ProgressState } from "@getops/contracts";
 
 import { infraQuestionById, infraQuestions, infrastructureLessons } from "../content/infrastructure/catalog";
-import type { InfraQuestion } from "../content/infrastructure/types";
+import type { InfraQuestion, InfraLesson } from "../content/infrastructure/types";
 
 export function checkpointResult(question: InfraQuestion, choices: number[] = []) {
   const correct = choices.includes(question.answer);
@@ -49,4 +49,25 @@ export function dailyInfrastructureReviews(state: ProgressState, date: Date) {
     return question && checkpointResult(question, answer.choices).complete &&
       new Date(answer.updatedAt).toLocaleDateString("en-CA") === day;
   }).length;
+}
+
+export function lessonNeedsReview(state: ProgressState, lesson: InfraLesson) {
+  return lesson.questions.some((question) => {
+    const result = checkpointResult(question, state.infraAnswers?.[question.id]?.choices);
+    return result.complete && !result.independent;
+  });
+}
+
+export function lessonStudyPath(state: ProgressState, lesson: InfraLesson, mode: "resume" | "review" = "resume") {
+  const path = `/learn/infrastructure/${lesson.id}`;
+  if (mode === "review") {
+    const review = lesson.questions.findIndex((question) => {
+      const result = checkpointResult(question, state.infraAnswers?.[question.id]?.choices);
+      return result.complete && !result.independent;
+    });
+    if (review >= 0) return `${path}?view=checkpoints&q=${review}`;
+  }
+  if (!state.infraRead?.includes(lesson.id)) return path;
+  const index = lesson.questions.findIndex((question) => !checkpointResult(question, state.infraAnswers?.[question.id]?.choices).complete);
+  return index < 0 ? path : `${path}?view=checkpoints&q=${index}`;
 }

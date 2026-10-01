@@ -7,16 +7,21 @@ import {
   RadioTower,
   ShieldAlert,
   Siren,
+  Terminal,
 } from "lucide-react";
 import { type CSSProperties } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import { branchById } from "../../domain/branches";
 import { scenarioBriefings } from "../../domain/scenario-briefings";
+import { infrastructureLabProgress } from "../../domain/infrastructure-labs";
+import { useProfileState } from "../../state/profile-state";
 
 const initialScenario = scenarioBriefings[0]!;
 
 export function SimulatePage() {
+  const { state } = useProfileState();
+  const labs = infrastructureLabProgress(state);
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedId = searchParams.get("scenario") ?? initialScenario.id;
   const scenario =
@@ -39,6 +44,7 @@ export function SimulatePage() {
         </a>
       </header>
 
+      <section className="infra-lab-entry" aria-label="Scored infrastructure labs"><Terminal size={24} /><div><span className="eyebrow">HANDS-ON / SYSTEMS</span><h2>Infrastructure investigations</h2><p>{labs.completed} / 4 reviewed · {labs.independent} first-try decisions · NIC, threads, I/O and Unix.</p></div><Link className="button button-primary" to={`/simulate/infrastructure/${labs.next.id}`}>{labs.decisions ? "Resume workbench" : "Enter workbench"}<ArrowRight size={16} /></Link></section>
       <section className="scenario-summary" aria-label="Scenario library summary">
         <div><Siren size={18} /><span>Briefings</span><strong>{scenarioBriefings.length}</strong></div>
         <div><RadioTower size={18} /><span>Live signals</span><strong>{scenarioBriefings.reduce((sum, item) => sum + item.signals.length, 0)}</strong></div>

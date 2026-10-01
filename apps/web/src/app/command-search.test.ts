@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 import { searchWorkspaceCommands } from "./command-search";
 
 describe("searchWorkspaceCommands", () => {
+  it("opens infrastructure investigations at their own route", () => {
+    const [result] = searchWorkspaceCommands("idle cores late messages");
+    expect(result).toMatchObject({ kind: "scenario", to: "/simulate/infrastructure/cpu-quota" });
+  });
   it("finds infrastructure concepts without sending them to a trading branch", () => {
     const results = searchWorkspaceCommands("NUMA");
     expect(results.some((result) => result.to === "/learn/infrastructure/memory")).toBe(true);

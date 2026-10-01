@@ -67,6 +67,13 @@ const router = createBrowserRouter([
       { path: "practice", element: <Navigate to="/practice/flashcards" replace /> },
       { path: "practice/flashcards", element: <FlashcardsPage /> },
       { path: "simulate", element: <SimulatePage /> },
+      {
+        path: "simulate/infrastructure/:labId?",
+        lazy: async () => {
+          const { InfrastructureLabPage } = await import("../features/infrastructure/InfrastructureLabPage");
+          return { Component: InfrastructureLabPage };
+        },
+      },
       { path: "profile", element: <ProfilePage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],

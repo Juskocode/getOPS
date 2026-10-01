@@ -13,6 +13,7 @@ import { Link } from "react-router";
 import { flashcards, flashcardsById } from "../../content/catalog";
 import { branches } from "../../domain/branches";
 import { dailyInfrastructureReviews } from "../../domain/infrastructure";
+import { dailyLabReviews } from "../../domain/infrastructure-labs";
 import { branchLearningMeta } from "../../domain/learning-path";
 import { rankProgress } from "../../domain/ranks";
 import { latestAttempts } from "../../state/evidence";
@@ -29,7 +30,7 @@ export function TodayPage() {
     (attempt) => new Date(attempt.createdAt).toLocaleDateString("en-CA") === today,
   ).length;
   const dailyInfrastructure = dailyInfrastructureReviews(state, new Date());
-  const dailyAttempts = dailyRecall + dailyInfrastructure;
+  const dailyAttempts = dailyRecall + dailyInfrastructure + dailyLabReviews(state, new Date());
   const dailyProgress = Math.min(100, Math.round((dailyAttempts / dailyTarget) * 100));
   const strong = attempts.filter((attempt) => attempt.score >= 80).length;
   const average = attempts.length

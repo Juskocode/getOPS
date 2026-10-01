@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { infraLessonById, infraQuestions, infrastructureLessons } from "../content/infrastructure/catalog";
 import { packetCases, packetStages } from "../content/infrastructure/packet-path";
-import { checkpointResult, dailyInfrastructureReviews, infrastructureProgress, recordInfraChoice } from "./infrastructure";
+import { checkpointResult, dailyInfrastructureReviews, infrastructureProgress, lessonNeedsReview, lessonStudyPath, recordInfraChoice } from "./infrastructure";
 
 const now = "2026-10-01T12:00:00.000Z";
 const question = infraQuestions[0]!;
@@ -40,6 +40,20 @@ describe("infrastructure curriculum", () => {
 });
 
 describe("checkpoint evidence", () => {
+  it("resumes unfinished checks and sends review links to guided evidence", () => {
+    const lesson = infrastructureLessons[0]!;
+    expect(lessonStudyPath({}, lesson)).toBe("/learn/infrastructure/nic");
+    let state: ProgressState = { infraRead: [lesson.id] };
+    expect(lessonStudyPath(state, lesson)).toBe("/learn/infrastructure/nic?view=checkpoints&q=0");
+    state = recordInfraChoice(state, question.id, 0, now);
+    state = recordInfraChoice(state, question.id, question.answer, now);
+    expect(lessonNeedsReview(state, lesson)).toBe(true);
+    expect(lessonStudyPath(state, lesson)).toBe("/learn/infrastructure/nic?view=checkpoints&q=1");
+    expect(lessonStudyPath(state, lesson, "review")).toBe("/learn/infrastructure/nic?view=checkpoints&q=0");
+    for (const q of lesson.questions) state = recordInfraChoice(state, q.id, q.answer, now);
+    expect(lessonStudyPath(state, lesson)).toBe("/learn/infrastructure/nic");
+    expect(lessonNeedsReview({}, lesson)).toBe(false);
+  });
   it("counts completed infrastructure reviews on their local calendar day only", () => {
     const pending = recordInfraChoice({}, question.id, 0, now);
     expect(dailyInfrastructureReviews(pending, new Date(now))).toBe(0);
