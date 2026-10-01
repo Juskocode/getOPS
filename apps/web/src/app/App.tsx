@@ -18,9 +18,19 @@ const queryClient = new QueryClient({
   },
 });
 
+function RouteLoading() {
+  return (
+    <div className="boot-screen" role="status" aria-live="polite">
+      <div className="boot-mark" aria-hidden="true" />
+      <strong>Opening getOPS</strong>
+    </div>
+  );
+}
+
 const router = createBrowserRouter([
   {
     path: "/lab/galton",
+    HydrateFallback: RouteLoading,
     lazy: async () => {
       const { GaltonLabRoute } = await import("../features/galton/GaltonLabRoute");
       return { Component: GaltonLabRoute };
@@ -28,6 +38,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
+    HydrateFallback: RouteLoading,
     element: <ProfileStateProvider><AppShell /></ProfileStateProvider>,
     children: [
       { index: true, element: <TodayPage /> },

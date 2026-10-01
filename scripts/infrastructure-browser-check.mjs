@@ -20,7 +20,11 @@ try {
   });
   const page = await context.newPage();
   const errors = [];
+  const hydrationWarnings = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.text().includes("No `HydrateFallback`")) hydrationWarnings.push(message.text());
+  });
   await page.goto(`${base}/learn/infrastructure`);
   await page.getByRole("heading", { name: "Understand the whole path." }).waitFor();
   assert.ok((await page.getByRole("textbox", { name: "Find infrastructure module" }).boundingBox()).width > 300, "Search must not collapse beside the stage filter");
@@ -113,6 +117,7 @@ try {
   await page.getByRole("heading", { name: "Operator profile" }).waitFor();
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "No profile overflow");
   assert.deepEqual(errors, []);
+  assert.deepEqual(hydrationWarnings, [], "Direct lesson routes must have a loading fallback");
   console.log(JSON.stringify({ profile, reviewed: 2, xp: evidence.state.xp, persisted: true, saveRetry: "passed", rehearsal: "no extra XP", mobile: "passed", reducedMotion: "passed", pageErrors: errors, screenshots: directory }, null, 2));
 } catch (error) {
   console.error(error);
