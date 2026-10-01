@@ -57,7 +57,14 @@ export const flashAttemptSchema = z.object({
 });
 
 export const infraLessonIdSchema = z.enum(["nic", "sockets", "event-loop", "threads", "memory", "storage", "unix", "capstone"]);
-export const infraLabIdSchema = z.enum(["rx-hotspot", "cpu-quota", "edge-trigger", "audit-io"]);
+export const infraLabIdSchema = z.enum(["rx-hotspot", "cpu-quota", "edge-trigger", "audit-io", "fd-exhaustion", "lock-convoy"]);
+export const infraLabNoteSchema = z.object({
+  observations: z.string().max(1200),
+  hypothesis: z.string().max(1200),
+  action: z.string().max(1200),
+  recovery: z.string().max(1200),
+  updatedAt: isoTimestampSchema,
+});
 const labDecisionSchema = z.object({
   choices: z.array(z.number().int().min(0).max(3)).min(1).max(3)
     .refine((choices) => new Set(choices).size === choices.length, "Duplicate choices"),
@@ -87,6 +94,7 @@ export const progressStateSchema = z
     infraRead: z.array(infraLessonIdSchema)
       .max(8).refine((ids) => new Set(ids).size === ids.length, "Duplicate lesson IDs").optional(),
     infraLabs: z.partialRecord(infraLabIdSchema, infraLabStateSchema).optional(),
+    infraLabNotes: z.partialRecord(infraLabIdSchema, infraLabNoteSchema).optional(),
     infraAnswers: z.record(
       z.string().regex(/^(nic|sockets|event-loop|threads|memory|storage|unix|capstone)-[1-4]$/),
       z.object({
@@ -144,6 +152,7 @@ export type FlashcardCatalog = z.infer<typeof flashcardCatalogSchema>;
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 export type InfraLessonId = z.infer<typeof infraLessonIdSchema>;
 export type InfraLabId = z.infer<typeof infraLabIdSchema>;
+export type InfraLabNote = z.infer<typeof infraLabNoteSchema>;
 export type ProfileStateResponse = z.infer<typeof profileStateResponseSchema>;
 export type ProgressState = z.infer<typeof progressStateSchema>;
 export type RecallValidationRequest = z.infer<typeof recallValidationRequestSchema>;

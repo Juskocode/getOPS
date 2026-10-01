@@ -1,11 +1,14 @@
 import type { InfraLabId, InfraLessonId } from "@getops/contracts";
 import type { InfraQuestion } from "./types";
+import { advancedInfrastructureLabs } from "./advanced-labs";
 
 export interface InfrastructureLab {
   id: InfraLabId;
   title: string;
   subtitle: string;
   minutes: number;
+  boundary: "Network" | "Execution" | "Unix";
+  level: "Core" | "Hard" | "HFT";
   lessons: InfraLessonId[];
   symptom: string;
   scope: string;
@@ -20,7 +23,7 @@ const option = (label: string, reason: string) => ({ label, reason });
 
 export const infrastructureLabs: InfrastructureLab[] = [
   {
-    id: "rx-hotspot", title: "The quiet host, the hot queue", subtitle: "NIC / IRQ / UDP continuity", minutes: 12, lessons: ["nic", "sockets"],
+    id: "rx-hotspot", title: "The quiet host, the hot queue", subtitle: "NIC / IRQ / UDP continuity", minutes: 12, boundary: "Network", level: "Core", lessons: ["nic", "sockets"],
     symptom: "At the simulated market open, one UDP feed develops sequence gaps. Host CPU is only 24%, but downstream freshness has degraded.",
     scope: "One receive channel on feed-a. Feed-b is a separately validated standby. No venue-wide outage is established.",
     trace: [1, 1, 2, 3, 8, 17, 29, 44, 65, 82, 103, 120],
@@ -54,7 +57,7 @@ export const infrastructureLabs: InfrastructureLab[] = [
     source: { label: "Linux kernel: receive-side scaling", url: "https://www.kernel.org/doc/html/latest/networking/scaling.html" },
   },
   {
-    id: "cpu-quota", title: "Idle cores, late messages", subtitle: "cgroup / scheduling / backlog", minutes: 14, lessons: ["threads", "capstone"],
+    id: "cpu-quota", title: "Idle cores, late messages", subtitle: "cgroup / scheduling / backlog", minutes: 14, boundary: "Execution", level: "Core", lessons: ["threads", "capstone"],
     symptom: "The host has spare CPU, yet the decoder queue grows after a deployment. Input is continuous and consumer age rises each second.",
     scope: "The decoder service cgroup. The exchange feed is progressing; the whole host is not saturated.",
     trace: [1, 1, 2, 7, 15, 24, 37, 53, 72, 88, 105, 125],
@@ -88,7 +91,7 @@ export const infrastructureLabs: InfrastructureLab[] = [
     source: { label: "Linux kernel: cgroup v2 CPU controller", url: "https://docs.kernel.org/admin-guide/cgroup-v2.html" },
   },
   {
-    id: "edge-trigger", title: "Connected, readable, not reading", subtitle: "epoll / nonblocking I/O / stream framing", minutes: 14, lessons: ["sockets", "event-loop", "unix"],
+    id: "edge-trigger", title: "Connected, readable, not reading", subtitle: "epoll / nonblocking I/O / stream framing", minutes: 14, boundary: "Network", level: "Hard", lessons: ["sockets", "event-loop", "unix"],
     symptom: "One TCP feed stops publishing after a reader change. The socket remains established, heartbeats from the process continue, and its receive queue contains bytes.",
     scope: "A single nonblocking TCP reader with EPOLLET enabled. Source-side connectivity is not enough to establish application progress.",
     trace: [1, 1, 1, 5, 24, 60, 95, 130, 165, 200, 235, 270],
@@ -122,7 +125,7 @@ export const infrastructureLabs: InfrastructureLab[] = [
     source: { label: "Linux manual: epoll edge-triggered behavior", url: "https://man7.org/linux/man-pages/man7/epoll.7.html" },
   },
   {
-    id: "audit-io", title: "When the audit path blocks trading", subtitle: "fsync / thread waits / durability", minutes: 12, lessons: ["storage", "threads", "unix"],
+    id: "audit-io", title: "When the audit path blocks trading", subtitle: "fsync / thread waits / durability", minutes: 12, boundary: "Unix", level: "Hard", lessons: ["storage", "threads", "unix"],
     symptom: "Market-data input stays fresh, but publish latency jumps after an audit-writer rollout. The main loop has low CPU and long waits.",
     scope: "A synchronous durability operation on the main event-loop thread. Audit requirements remain in force during the incident.",
     trace: [2, 2, 3, 9, 30, 58, 74, 95, 102, 115, 137, 160],
@@ -155,6 +158,7 @@ export const infrastructureLabs: InfrastructureLab[] = [
     handoff: "The main loop waited on audit durability after a writer rollout. Escalate both trading freshness and recording risk, follow the authorized rollback, and reconcile durable records. Recovery must prove bounded queues, resolved I/O errors and fresh downstream data.",
     source: { label: "Linux manual: fsync and durability", url: "https://man7.org/linux/man-pages/man2/fsync.2.html" },
   },
+  ...advancedInfrastructureLabs,
 ];
 
 export const infrastructureLabById = new Map(infrastructureLabs.map((lab) => [lab.id as string, lab]));

@@ -17,7 +17,7 @@ const std::regex kProfilePattern(R"(^[A-Za-z0-9_-]{1,40}$)");
 const std::regex kCardPattern(R"(^f(?:0[1-9]|[1-9][0-9]|1[0-4][0-9]|150)$)");
 const std::regex kInfraLessonPattern(R"(^(nic|sockets|event-loop|threads|memory|storage|unix|capstone)$)");
 const std::regex kInfraQuestionPattern(R"(^(nic|sockets|event-loop|threads|memory|storage|unix|capstone)-[1-4]$)");
-const std::regex kInfraLabPattern(R"(^(rx-hotspot|cpu-quota|edge-trigger|audit-io)$)");
+const std::regex kInfraLabPattern(R"(^(rx-hotspot|cpu-quota|edge-trigger|audit-io|fd-exhaustion|lock-convoy)$)");
 const std::regex kTimestampPattern(
     R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$)");
 
@@ -253,7 +253,7 @@ void StateValidator::validate(const nlohmann::json& state) {
 
   if (state.contains("infraLabs")) {
     const auto& labs = state.at("infraLabs");
-    if (!labs.is_object() || labs.size() > 4) invalid("infraLabs must contain at most four investigations.");
+    if (!labs.is_object() || labs.size() > 6) invalid("infraLabs must contain at most six investigations.");
     for (const auto& [id, lab] : labs.items()) {
       if (!std::regex_match(id, kInfraLabPattern) || !lab.is_object() ||
           !lab.contains("inspected") || !lab.at("inspected").is_array() || lab.at("inspected").size() > 4 ||
@@ -278,6 +278,25 @@ void StateValidator::validate(const nlohmann::json& state) {
         }
         if (!std::regex_match(text(decision, "updatedAt", 1, 40), kTimestampPattern)) invalid("Invalid decision timestamp.");
       }
+    }
+  }
+
+  if (state.contains("infraLabNotes")) {
+    const auto& notes = state.at("infraLabNotes");
+    if (!notes.is_object() || notes.size() > 6) invalid("Invalid investigation notebooks.");
+    for (const auto& [id, note] : notes.items()) {
+      if (!std::regex_match(id, kInfraLabPattern) || !note.is_object()) invalid("Invalid investigation notebook.");
+      for (const auto* field : {"observations", "hypothesis", "action", "recovery"}) {
+        const auto value = text(note, field, 0, 4800);
+        // JSON strings are valid UTF-8; match the browser's UTF-16 maxlength units.
+        std::size_t units = 0;
+        for (const char character : value) {
+          const auto byte = static_cast<unsigned char>(character);
+          if ((byte & 0xc0) != 0x80) units += byte >= 0xf0 ? 2 : 1;
+        }
+        if (units > 1200) invalid("Notebook fields exceed 1200 characters.");
+      }
+      if (!std::regex_match(text(note, "updatedAt", 1, 40), kTimestampPattern)) invalid("Invalid notebook timestamp.");
     }
   }
 

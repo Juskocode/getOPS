@@ -2,16 +2,16 @@ import { progressStateSchema, type ProgressState } from "@getops/contracts";
 import { describe, expect, it } from "vitest";
 import { infrastructureLabs } from "../content/infrastructure/labs";
 import { infraLessonById } from "../content/infrastructure/catalog";
-import { dailyLabReviews, infrastructureLabProgress, inspectLabEvidence, labProgress, recordLabChoice } from "./infrastructure-labs";
+import { dailyLabReviews, filterInvestigations, infrastructureLabProgress, inspectLabEvidence, labProgress, labReviewQueue, labStudyPath, recordLabChoice } from "./infrastructure-labs";
 
 const now = "2026-10-01T12:00:00Z";
 const lab = infrastructureLabs[0]!;
 const inspectAll = (state: ProgressState = {}) => lab.evidence.reduce((next, _, index) => inspectLabEvidence(next, lab.id, index, now), state);
 
 describe("infrastructure investigations", () => {
-  it("has linked lessons, twelve complete decisions and synthetic evidence", () => {
-    expect(infrastructureLabs).toHaveLength(4);
-    expect(new Set(infrastructureLabs.map((item) => item.id)).size).toBe(4);
+  it("has linked lessons, eighteen complete decisions and synthetic evidence", () => {
+    expect(infrastructureLabs).toHaveLength(6);
+    expect(new Set(infrastructureLabs.map((item) => item.id)).size).toBe(6);
     for (const item of infrastructureLabs) {
       expect(item.steps).toHaveLength(3);
       expect(item.evidence).toHaveLength(4);
@@ -26,6 +26,27 @@ describe("infrastructure investigations", () => {
         for (const option of step.options) expect(option.reason.length).toBeGreaterThan(50);
       }
     }
+  });
+  it("filters by boundary, progress and all search tokens without changing results", () => {
+    expect(filterInvestigations({}, "", "all", "new")).toHaveLength(6);
+    expect(filterInvestigations({}, "", "Unix", "all").map((item) => item.id)).toEqual(["audit-io", "fd-exhaustion"]);
+    expect(filterInvestigations({}, "mutex threads", "Execution", "all").map((item) => item.id)).toEqual(["lock-convoy"]);
+    expect(filterInvestigations({}, "no-such-case", "all", "all")).toHaveLength(0);
+    const started = inspectAll();
+    expect(filterInvestigations(started, "", "all", "active")).toEqual([lab]);
+    expect(filterInvestigations(started, "", "all", "new")).toHaveLength(5);
+  });
+  it("links directly to uncertain decisions and completed case debriefs", () => {
+    let state = inspectAll();
+    state = recordLabChoice(state, lab.id, 0, 0, now);
+    state = recordLabChoice(state, lab.id, 0, 1, now);
+    expect(labReviewQueue(state)).toMatchObject([{ index: 0, revealed: false, to: "/simulate/infrastructure/rx-hotspot?step=0&focus=1" }]);
+    expect(labStudyPath(lab, state)).toBe("/simulate/infrastructure/rx-hotspot?step=1");
+    expect(labStudyPath(lab, state, true)).toBe("/simulate/infrastructure/rx-hotspot?step=0&focus=1");
+    expect(filterInvestigations(state, "", "all", "review")).toEqual([lab]);
+    for (const [index, step] of lab.steps.entries()) state = recordLabChoice(state, lab.id, index, step.answer, now);
+    expect(labStudyPath(lab, state)).toBe("/simulate/infrastructure/rx-hotspot?view=debrief");
+    expect(filterInvestigations(state, "", "all", "complete")).toEqual([lab]);
   });
   it("requires inspected evidence and sequential decisions", () => {
     expect(recordLabChoice({}, lab.id, 0, 1, now)).toEqual({});

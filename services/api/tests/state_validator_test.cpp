@@ -125,6 +125,33 @@ int main() {
       lab_state["infraLabs"]["rx-hotspot"]["decisions"][0], lab_state["infraLabs"]["rx-hotspot"]["decisions"][0],
       lab_state["infraLabs"]["rx-hotspot"]["decisions"][0], lab_state["infraLabs"]["rx-hotspot"]["decisions"][0]});
   expect_domain_error([&bad_lab]() { getops::StateValidator::validate(bad_lab); }, "state_invalid");
+  auto note_state = nlohmann::json::object();
+  note_state["infraLabNotes"]["fd-exhaustion"] = {
+      {"observations", "Local EMFILE; existing sessions still receive."}, {"hypothesis", ""},
+      {"action", "Escalate and follow the authorized recovery path."}, {"recovery", ""},
+      {"updatedAt", "2026-10-01T12:00:00Z"}};
+  getops::StateValidator::validate(note_state);
+  auto unicode_note = note_state;
+  std::string accented;
+  for (int i = 0; i < 1200; ++i) accented += "\xc3\xa1";
+  unicode_note["infraLabNotes"]["fd-exhaustion"]["observations"] = accented;
+  getops::StateValidator::validate(unicode_note);
+  unicode_note["infraLabNotes"]["fd-exhaustion"]["observations"] = accented + "a";
+  expect_domain_error([&unicode_note]() { getops::StateValidator::validate(unicode_note); }, "state_invalid");
+  auto bad_note = note_state;
+  bad_note["infraLabNotes"]["fd-exhaustion"]["action"] = std::string(1201, 'x');
+  expect_domain_error([&bad_note]() { getops::StateValidator::validate(bad_note); }, "state_invalid");
+  bad_note = note_state;
+  bad_note["infraLabNotes"]["fd-exhaustion"].erase("recovery");
+  expect_domain_error([&bad_note]() { getops::StateValidator::validate(bad_note); }, "state_invalid");
+  bad_note = note_state;
+  bad_note["infraLabNotes"]["unknown"] = bad_note["infraLabNotes"]["fd-exhaustion"];
+  expect_domain_error([&bad_note]() { getops::StateValidator::validate(bad_note); }, "state_invalid");
+  for (const auto* id : {"fd-exhaustion", "lock-convoy"}) {
+    auto advanced_lab = nlohmann::json::object();
+    advanced_lab["infraLabs"][id] = lab_state["infraLabs"]["rx-hotspot"];
+    getops::StateValidator::validate(advanced_lab);
+  }
   const getops::RecallScorer scorer(catalog);
   auto authoritative = nlohmann::json(scorer.validate(
       "f01",

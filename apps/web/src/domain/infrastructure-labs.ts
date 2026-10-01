@@ -40,10 +40,38 @@ export function recordLabChoice(state: ProgressState, labId: string, index: numb
 
 export function infrastructureLabProgress(state: ProgressState) {
   const runs = infrastructureLabs.map((lab) => labProgress(lab, state));
-  return { completed: runs.filter((run) => run.done).length,
+  return { total: runs.length, completed: runs.filter((run) => run.done).length,
     decisions: runs.reduce((sum, run) => sum + run.completed, 0),
     independent: runs.reduce((sum, run) => sum + run.independent, 0),
     next: infrastructureLabs.find((_, index) => !runs[index]!.done) ?? infrastructureLabs[0]! };
+}
+
+export function labStudyPath(lab: InfrastructureLab, state: ProgressState, review = false) {
+  const progress = labProgress(lab, state);
+  const path = `/simulate/infrastructure/${lab.id}`;
+  if (review) {
+    const index = progress.results.findIndex((result) => result.complete && !result.independent);
+    if (index >= 0) return `${path}?step=${index}&focus=1`;
+  }
+  return progress.done ? `${path}?view=debrief` : `${path}?step=${progress.next}`;
+}
+
+export function labReviewQueue(state: ProgressState) {
+  return infrastructureLabs.flatMap((lab) => labProgress(lab, state).results.flatMap((result, index) =>
+    result.complete && !result.independent ? [{ lab, step: lab.steps[index]!, index, revealed: !result.correct,
+      to: `/simulate/infrastructure/${lab.id}?step=${index}&focus=1` }] : []));
+}
+
+export function filterInvestigations(state: ProgressState, query: string, boundary: string, status: string) {
+  const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  return infrastructureLabs.filter((lab) => {
+    const progress = labProgress(lab, state);
+    const started = Boolean(state.infraLabs?.[lab.id]?.inspected.length || state.infraLabs?.[lab.id]?.decisions.length);
+    const haystack = `${lab.title} ${lab.subtitle} ${lab.symptom} ${lab.boundary} ${lab.lessons.join(" ")}`.toLowerCase();
+    return tokens.every((token) => haystack.includes(token)) && (boundary === "all" || boundary === lab.boundary) &&
+      (status === "all" || (status === "new" && !started) || (status === "active" && started && !progress.done) ||
+        (status === "review" && progress.guided + progress.revealed > 0) || (status === "complete" && progress.done));
+  });
 }
 
 export function dailyLabReviews(state: ProgressState, date: Date) {
