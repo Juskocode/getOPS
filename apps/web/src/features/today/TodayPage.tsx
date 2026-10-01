@@ -16,6 +16,7 @@ import { branchLearningMeta } from "../../domain/learning-path";
 import { rankProgress } from "../../domain/ranks";
 import { latestAttempts } from "../../state/evidence";
 import { useProfileState } from "../../state/profile-state";
+import { InfrastructureProgress } from "../infrastructure/InfrastructureProgress";
 
 export function TodayPage() {
   const { state } = useProfileState();
@@ -134,6 +135,8 @@ export function TodayPage() {
           </div>
         </section>
       ) : null}
+
+      <InfrastructureProgress />
 
       <div className="two-column today-columns">
         <section className="work-panel">

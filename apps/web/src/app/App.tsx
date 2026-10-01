@@ -33,6 +33,20 @@ const router = createBrowserRouter([
       { index: true, element: <TodayPage /> },
       { path: "learn", element: <LearnPage /> },
       {
+        path: "learn/infrastructure",
+        lazy: async () => {
+          const { InfrastructurePage } = await import("../features/infrastructure/InfrastructurePage");
+          return { Component: InfrastructurePage };
+        },
+      },
+      {
+        path: "learn/infrastructure/:lessonId",
+        lazy: async () => {
+          const { InfrastructureLessonPage } = await import("../features/infrastructure/InfrastructureLessonPage");
+          return { Component: InfrastructureLessonPage };
+        },
+      },
+      {
         path: "learn/:branchId",
         lazy: async () => {
           const { DeepDivePage } = await import("../features/learn/DeepDivePage");

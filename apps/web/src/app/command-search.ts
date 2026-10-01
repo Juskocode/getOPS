@@ -4,12 +4,14 @@ import {
   FlaskConical,
   GraduationCap,
   Layers3,
+  Network,
   RadioTower,
   Siren,
   type LucideIcon,
 } from "lucide-react";
 
 import { flashcards } from "../content/catalog";
+import { infrastructureLessons } from "../content/infrastructure/catalog";
 import { branchById, branches } from "../domain/branches";
 import { scenarioBriefings } from "../domain/scenario-briefings";
 
@@ -44,6 +46,16 @@ const destinationCommands: WorkspaceCommand[] = [
     to: "/learn",
     icon: BookOpen,
     searchText: "learn roadmap path guides curriculum operational knowledge",
+  },
+  {
+    id: "destination-infrastructure",
+    kind: "destination",
+    label: "Systems & infrastructure",
+    meta: "Linux learning path",
+    to: "/learn/infrastructure",
+    icon: Network,
+    color: "#63d6a0",
+    searchText: "systems infrastructure linux unix nic io threads network packet path",
   },
   {
     id: "destination-practice",
@@ -128,6 +140,16 @@ export const workspaceCommands = [
   ...guideCommands,
   ...recallCommands,
   ...scenarioCommands,
+  ...infrastructureLessons.map((lesson): WorkspaceCommand => ({
+    id: `infra-${lesson.id}`,
+    kind: "guide",
+    label: lesson.title,
+    meta: `Infrastructure / ${lesson.stage}`,
+    to: `/learn/infrastructure/${lesson.id}`,
+    icon: Network,
+    color: "#63d6a0",
+    searchText: `${lesson.title} ${lesson.subtitle} ${lesson.concepts.map((concept) => `${concept.title} ${concept.body}`).join(" ")}`,
+  })),
 ];
 
 function normalize(value: string): string {

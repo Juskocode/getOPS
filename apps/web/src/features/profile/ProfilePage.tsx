@@ -7,6 +7,7 @@ import { branches } from "../../domain/branches";
 import { operatorRanks, rankProgress } from "../../domain/ranks";
 import { latestAttempts } from "../../state/evidence";
 import { useProfileState } from "../../state/profile-state";
+import { InfrastructureProgress } from "../infrastructure/InfrastructureProgress";
 
 export function ProfilePage() {
   const { state, record, save, isSaving } = useProfileState();
@@ -31,6 +32,7 @@ export function ProfilePage() {
         </div>
       </header>
 
+      <InfrastructureProgress />
       <div className="profile-layout">
         <section className="identity-panel">
           <div className="identity-mark">{name.trim().slice(0, 1).toUpperCase() || "O"}</div>
