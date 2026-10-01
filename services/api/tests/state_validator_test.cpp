@@ -72,6 +72,31 @@ int main() {
   };
   getops::StateValidator::validate(state);
 
+  auto infra = nlohmann::json{
+      {"infraRead", nlohmann::json::array({"nic", "sockets"})},
+      {"infraAnswers", {{"nic-1", {{"choices", nlohmann::json::array({0, 1})},
+                                  {"updatedAt", "2026-10-01T10:20:30.000Z"}}}}},
+  };
+  getops::StateValidator::validate(infra);
+  for (const auto& choices : {nlohmann::json::array({0, 0}), nlohmann::json::array({4}),
+                              nlohmann::json::array(), nlohmann::json::array({"0"}),
+                              nlohmann::json::array({0, 1, 2, 3})}) {
+    auto bad = infra;
+    bad["infraAnswers"]["nic-1"]["choices"] = choices;
+    expect_domain_error([&bad]() { getops::StateValidator::validate(bad); }, "state_invalid");
+  }
+  auto bad_lesson = infra;
+  bad_lesson["infraRead"] = nlohmann::json::array({"nic", "nic"});
+  expect_domain_error([&bad_lesson]() { getops::StateValidator::validate(bad_lesson); }, "state_invalid");
+  bad_lesson["infraRead"] = nlohmann::json::array({"unknown"});
+  expect_domain_error([&bad_lesson]() { getops::StateValidator::validate(bad_lesson); }, "state_invalid");
+  auto bad_question = infra;
+  bad_question["infraAnswers"]["nic-5"] = infra["infraAnswers"]["nic-1"];
+  expect_domain_error([&bad_question]() { getops::StateValidator::validate(bad_question); }, "state_invalid");
+  auto bad_time = infra;
+  bad_time["infraAnswers"]["nic-1"]["updatedAt"] = "yesterday";
+  expect_domain_error([&bad_time]() { getops::StateValidator::validate(bad_time); }, "state_invalid");
+
   const auto catalog = getops::Catalog::load(GETOPS_TEST_CATALOG);
   const getops::RecallScorer scorer(catalog);
   auto authoritative = nlohmann::json(scorer.validate(

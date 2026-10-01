@@ -15,6 +15,8 @@ namespace {
 
 const std::regex kProfilePattern(R"(^[A-Za-z0-9_-]{1,40}$)");
 const std::regex kCardPattern(R"(^f(?:0[1-9]|[1-9][0-9]|1[0-4][0-9]|150)$)");
+const std::regex kInfraLessonPattern(R"(^(nic|sockets|event-loop|threads|memory|storage|unix|capstone)$)");
+const std::regex kInfraQuestionPattern(R"(^(nic|sockets|event-loop|threads|memory|storage|unix|capstone)-[1-4]$)");
 const std::regex kTimestampPattern(
     R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$)");
 
@@ -208,6 +210,44 @@ void StateValidator::validate(const nlohmann::json& state) {
   }
   if (state.contains("profileObjective")) {
     text(state, "profileObjective", 0, 160);
+  }
+
+  if (state.contains("infraRead")) {
+    const auto& read = state.at("infraRead");
+    if (!read.is_array() || read.size() > 8) {
+      invalid("infraRead must contain at most 8 lessons.");
+    }
+    std::unordered_set<std::string> lessons;
+    for (const auto& lesson : read) {
+      if (!lesson.is_string() ||
+          !std::regex_match(lesson.get<std::string>(), kInfraLessonPattern) ||
+          !lessons.insert(lesson.get<std::string>()).second) {
+        invalid("infraRead contains an invalid or duplicate lesson.");
+      }
+    }
+  }
+  if (state.contains("infraAnswers")) {
+    const auto& answers = state.at("infraAnswers");
+    if (!answers.is_object() || answers.size() > 32) {
+      invalid("infraAnswers must contain at most 32 checkpoints.");
+    }
+    for (const auto& [question, answer] : answers.items()) {
+      if (!std::regex_match(question, kInfraQuestionPattern) || !answer.is_object() ||
+          !answer.contains("choices") || !answer.at("choices").is_array() ||
+          answer.at("choices").empty() || answer.at("choices").size() > 3) {
+        invalid("Invalid infrastructure checkpoint evidence.");
+      }
+      std::unordered_set<int> choices;
+      for (const auto& choice : answer.at("choices")) {
+        if (!choice.is_number_integer() || choice < 0 || choice > 3 ||
+            !choices.insert(choice.get<int>()).second) {
+          invalid("Infrastructure choices must be distinct option indices from 0 to 3.");
+        }
+      }
+      if (!std::regex_match(text(answer, "updatedAt", 1, 40), kTimestampPattern)) {
+        invalid("Infrastructure updatedAt must be an RFC 3339 timestamp.");
+      }
+    }
   }
 
   if (state.contains("flashDrafts")) {
