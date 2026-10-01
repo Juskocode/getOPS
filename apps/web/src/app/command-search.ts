@@ -31,6 +31,10 @@ export interface WorkspaceCommand {
 
 const destinationCommands: WorkspaceCommand[] = [
   {
+    id: "destination-investigations", kind: "destination", label: "Incident workbench", meta: "Systems investigations",
+    to: "/simulate/infrastructure", icon: FlaskConical, searchText: "incident workbench investigation library notebook systems simulations",
+  },
+  {
     id: "destination-today",
     kind: "destination",
     label: "Operator command center",

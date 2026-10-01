@@ -5,9 +5,11 @@ import { Link, useParams, useSearchParams } from "react-router";
 
 import { infraLessonById } from "../../content/infrastructure/catalog";
 import { infrastructureLabById, infrastructureLabs, type InfrastructureLab } from "../../content/infrastructure/labs";
-import { inspectLabEvidence, labProgress, recordLabChoice } from "../../domain/infrastructure-labs";
+import { inspectLabEvidence, labProgress, labStudyPath, recordLabChoice } from "../../domain/infrastructure-labs";
 import { useProfileState } from "../../state/profile-state";
 import { LabDecision } from "./LabDecision";
+import { InvestigationLibrary } from "./InvestigationLibrary";
+import { IncidentNotebook } from "./IncidentNotebook";
 
 function LatencyTrace({ values }: { values: number[] }) {
   const [sample, setSample] = useState(values.length - 1);
@@ -29,7 +31,8 @@ function LatencyTrace({ values }: { values: number[] }) {
 
 export function InfrastructureLabPage() {
   const { labId } = useParams();
-  const lab = labId ? infrastructureLabById.get(labId) : infrastructureLabs[0];
+  if (!labId) return <InvestigationLibrary />;
+  const lab = infrastructureLabById.get(labId);
   if (!lab) return <div className="page infra-empty"><h1>Investigation not found</h1><Link className="button" to="/simulate/infrastructure"><ArrowLeft size={16} />Investigations</Link></div>;
   return <LabWorkbench key={lab.id} lab={lab} />;
 }
@@ -51,6 +54,7 @@ function LabWorkbench({ lab }: { lab: InfrastructureLab }) {
   const submitting = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const focus = params.get("focus") === "1";
+  const [signalsOpen, setSignalsOpen] = useState(!focus);
   const debrief = params.get("view") === "debrief" && progress.done;
   const allowed = step.requires.every((id) => progress.inspected.includes(id));
 
@@ -86,22 +90,26 @@ function LabWorkbench({ lab }: { lab: InfrastructureLab }) {
     heading.current?.scrollIntoView({ block: "start", behavior: "instant" });
   }
   const evidence = activeEvidence === null ? null : lab.evidence[activeEvidence];
+  function rehearse(index = 0) {
+    const original = state.infraLabs?.[lab.id];
+    setRehearsal(index === 0 ? {} : { infraLabs: { [lab.id]: { inspected: original?.inspected ?? [], decisions: original?.decisions.slice(0, index) ?? [], updatedAt: new Date().toISOString() } } });
+    setActiveEvidence(null); navigateStep(index);
+  }
 
   return <div className="page investigation-page">
-    <header className="investigation-top"><Link className="breadcrumb-link" to="/learn/infrastructure"><ArrowLeft size={16} />Infrastructure path</Link>
+    <header className="investigation-top"><Link className="breadcrumb-link" to="/simulate/infrastructure"><ArrowLeft size={16} />All investigations</Link>
       <div><span className="status-label" data-tone="warning">SYNTHETIC LAB</span><button type="button" className="icon-button" title={focus ? "Show case library" : "Focus on investigation"} aria-label={focus ? "Show case library" : "Focus on investigation"} aria-pressed={focus} onClick={() => { const next = new URLSearchParams(params); if (focus) next.delete("focus"); else next.set("focus", "1"); setParams(next); }}>{focus ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}</button></div></header>
     <div className="investigation-layout" data-focus={focus}>
       {!focus && <aside className="investigation-library"><span className="eyebrow">INCIDENT WORKBENCH</span><h2>Investigations</h2><nav aria-label="Infrastructure investigations">
-        {infrastructureLabs.map((item, index) => { const status = labProgress(item, state); return <Link key={item.id} to={`/simulate/infrastructure/${item.id}`} aria-current={item.id === lab.id ? "page" : undefined}>
+        {infrastructureLabs.map((item, index) => { const status = labProgress(item, state); return <Link key={item.id} to={labStudyPath(item, state)} aria-current={item.id === lab.id ? "page" : undefined}>
           <span>{status.done ? <CheckCircle2 size={17} /> : String(index + 1).padStart(2, "0")}</span><div><strong>{item.title}</strong><small>{status.completed} / 3 reviewed · {item.minutes} min</small></div></Link>; })}
       </nav><Link className="infra-related-branch" to="/simulate"><Activity size={16} />Trading incident briefings<ArrowRight size={15} /></Link></aside>}
       <article className="investigation-body">
         <header className="investigation-heading"><span className="eyebrow">{lab.subtitle.toUpperCase()}</span><h1 ref={heading} tabIndex={-1}>{lab.title}</h1><p>{lab.symptom}</p><div><Clock3 size={14} />{lab.minutes} min<span>{progress.completed} / 3 decisions reviewed</span>{rehearsal !== null && <strong>REHEARSAL / NOT SAVED</strong>}</div></header>
         {rehearsal !== null && <button type="button" onClick={() => { setRehearsal(null); setActiveEvidence(null); navigateStep(0); }}><ArrowLeft size={15} />End rehearsal</button>}
-        <p className="investigation-scope"><strong>Known scope</strong>{lab.scope}</p>
-        <LatencyTrace values={lab.trace} />
+        <details className="investigation-signals" open={signalsOpen} onToggle={(event) => setSignalsOpen(event.currentTarget.open)}><summary><Activity size={16} /><strong>Signal context</strong><span>Consumer age {lab.trace.at(-1)} ms / synthetic</span></summary><p className="investigation-scope"><strong>Known scope</strong>{lab.scope}</p><LatencyTrace values={lab.trace} /></details>
         <nav className="investigation-steps" aria-label="Investigation stages">{lab.steps.map((item, index) => <button key={item.id} type="button" disabled={pending || (!progress.done && index > progress.next)} aria-current={!debrief && index === stepIndex ? "step" : undefined} onClick={() => navigateStep(index)}><span>{progress.results[index]?.complete ? <Check size={14} /> : index + 1}</span>{item.phase}</button>)}<button type="button" disabled={!progress.done || pending} aria-current={debrief ? "step" : undefined} onClick={() => navigateStep(stepIndex, "debrief")}>Debrief</button></nav>
-        {!debrief ? <>
+        {!debrief ? <div className="investigation-workarea">
           <section className="investigation-evidence" aria-label="Evidence desk"><header><h2><Terminal size={17} />Evidence desk</h2><span>{progress.inspected.length} / 4 inspected</span></header>
             <div className="investigation-evidence-tabs" role="group" aria-label="Inspect evidence">{lab.evidence.map((item, index) => <button key={item.title} type="button" disabled={pending} aria-pressed={activeEvidence === index} data-required={step.requires.includes(index) && !progress.inspected.includes(index)} onClick={() => inspect(index)}>{progress.inspected.includes(index) ? <Check size={14} /> : <Terminal size={14} />}<span>{item.title}</span>{step.requires.includes(index) && !progress.inspected.includes(index) && <small>Required</small>}</button>)}</div>
             {evidence ? <div className="investigation-evidence-content" key={activeEvidence}>
@@ -112,14 +120,16 @@ function LabWorkbench({ lab }: { lab: InfrastructureLab }) {
           </section>
           <LabDecision key={`${lab.id}-${stepIndex}-${rehearsal !== null}`} step={step} choices={decisions[stepIndex]?.choices ?? []} allowed={allowed} pending={pending} error={error} rehearsal={rehearsal !== null}
             onSubmit={(choice) => commit((previous) => recordLabChoice(previous, lab.id, stepIndex, choice, new Date().toISOString()))}
+            onRehearse={() => rehearse(stepIndex)}
             onNext={() => navigateStep(Math.min(2, stepIndex + 1), stepIndex === 2 ? "debrief" : "decision")} last={stepIndex === 2} />
-        </> : <section className="investigation-debrief" aria-label="Investigation debrief"><span className="eyebrow">INVESTIGATION REVIEWED</span><h2>Evidence to handover</h2>
+        </div> : <section className="investigation-debrief" aria-label="Investigation debrief"><span className="eyebrow">INVESTIGATION REVIEWED</span><h2>Evidence to handover</h2>
           <div className="investigation-results"><div><strong>{progress.independent}</strong><span>First try</span></div><div><strong>{progress.guided}</strong><span>Guided</span></div><div><strong>{progress.revealed}</strong><span>Revealed</span></div></div>
           <h3>Operational handover</h3><p>{lab.handoff}</p><h3>Decision record</h3><ol>{lab.steps.map((item, index) => <li key={item.id}><strong>{item.phase}</strong><span>{item.takeaway}</span><small>{progress.results[index]?.independent ? "First try" : progress.results[index]?.correct ? "Guided review" : "Answer revealed"}</small></li>)}</ol>
           <p className="investigation-boundary">Self-study evidence, not an operational certification. Reading a panel records inspection, not proof of understanding. No commands or trading actions are executed.</p>
-          <div className="investigation-actions"><button type="button" onClick={() => { setRehearsal({}); setActiveEvidence(null); navigateStep(0); }}><RotateCcw size={16} />Rehearse without XP</button>{rehearsal !== null && <button type="button" onClick={() => { setRehearsal(null); setActiveEvidence(null); navigateStep(0); }}>Return to saved run</button>}
-            <Link className="button button-primary" to={`/simulate/infrastructure/${infrastructureLabs[(infrastructureLabs.indexOf(lab) + 1) % infrastructureLabs.length]!.id}`}>Next investigation<ArrowRight size={16} /></Link></div>
+          <div className="investigation-actions"><button type="button" onClick={() => rehearse()}><RotateCcw size={16} />Rehearse without XP</button>{rehearsal !== null && <button type="button" onClick={() => { setRehearsal(null); setActiveEvidence(null); navigateStep(0); }}>Return to saved run</button>}
+            <Link className="button button-primary" to={labStudyPath(infrastructureLabs[(infrastructureLabs.indexOf(lab) + 1) % infrastructureLabs.length]!, state)}>Next investigation<ArrowRight size={16} /></Link></div>
         </section>}
+        <IncidentNotebook lab={lab} rehearsal={rehearsal !== null} />
         <section className="investigation-references"><h2>Related study</h2><div>{lab.lessons.map((id) => <Link key={id} to={`/learn/infrastructure/${id}`}>{infraLessonById.get(id)?.title}<ArrowRight size={14} /></Link>)}</div><a href={lab.source.url} target="_blank" rel="noreferrer">{lab.source.label}<ExternalLink size={14} /></a></section>
       </article>
     </div>

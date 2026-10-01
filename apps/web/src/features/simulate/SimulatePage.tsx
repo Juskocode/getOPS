@@ -44,7 +44,7 @@ export function SimulatePage() {
         </a>
       </header>
 
-      <section className="infra-lab-entry" aria-label="Scored infrastructure labs"><Terminal size={24} /><div><span className="eyebrow">HANDS-ON / SYSTEMS</span><h2>Infrastructure investigations</h2><p>{labs.completed} / 4 reviewed · {labs.independent} first-try decisions · NIC, threads, I/O and Unix.</p></div><Link className="button button-primary" to={`/simulate/infrastructure/${labs.next.id}`}>{labs.decisions ? "Resume workbench" : "Enter workbench"}<ArrowRight size={16} /></Link></section>
+      <section className="infra-lab-entry" aria-label="Scored infrastructure labs"><Terminal size={24} /><div><span className="eyebrow">HANDS-ON / SYSTEMS</span><h2>Infrastructure investigations</h2><p>{labs.completed} / {labs.total} reviewed · {labs.independent} first-try decisions · NIC, threads, I/O and Unix.</p></div><Link className="button button-primary" to="/simulate/infrastructure">Open workbench<ArrowRight size={16} /></Link></section>
       <section className="scenario-summary" aria-label="Scenario library summary">
         <div><Siren size={18} /><span>Briefings</span><strong>{scenarioBriefings.length}</strong></div>
         <div><RadioTower size={18} /><span>Live signals</span><strong>{scenarioBriefings.reduce((sum, item) => sum + item.signals.length, 0)}</strong></div>

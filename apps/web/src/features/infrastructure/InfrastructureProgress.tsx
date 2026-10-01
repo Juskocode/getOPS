@@ -13,7 +13,7 @@ export function InfrastructureProgress() {
     <section className="infra-progress-band" aria-label="Infrastructure progress">
       <Network size={24} aria-hidden="true" />
       <div><span className="eyebrow">SYSTEMS & INFRASTRUCTURE</span><h2>From packet to production decision</h2>
-        <p>Linux receive paths, threads, I/O and Unix operations.</p><Link className="infra-band-labs" to={`/simulate/infrastructure/${labs.next.id}`}>{labs.completed} / 4 investigations reviewed<ArrowRight size={13} /></Link></div>
+        <p>Linux receive paths, threads, I/O and Unix operations.</p><Link className="infra-band-labs" to="/simulate/infrastructure">{labs.completed} / {labs.total} investigations reviewed<ArrowRight size={13} /></Link></div>
       <div className="infra-band-count"><strong>{progress.completed}<span> / {progress.total}</span></strong><small>checkpoints reviewed</small></div>
       <Link className="button" to={lessonStudyPath(state, progress.next)}>
         {progress.completed ? "Continue" : "Start path"} <ArrowRight size={16} />

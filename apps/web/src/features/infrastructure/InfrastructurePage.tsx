@@ -62,7 +62,7 @@ export function InfrastructurePage() {
         </div>
         {!filtered.length && <div className="infra-empty"><Search size={22} /><h3>No matching modules</h3><button type="button" onClick={() => setParams({})}>Clear filters</button></div>}
       </section>
-      <section className="infra-lab-entry" aria-label="Infrastructure investigations"><FlaskConical size={24} /><div><span className="eyebrow">03 / APPLY THE EVIDENCE</span><h2>Incident workbench</h2><p>RX queues, CPU budgets, epoll and audit I/O. {labs.completed} / 4 investigations reviewed.</p></div><Link className="button button-primary" to={`/simulate/infrastructure/${labs.next.id}`}>{labs.decisions ? "Resume investigation" : "Start investigation"}<ArrowRight size={16} /></Link></section>
+      <section className="infra-lab-entry" aria-label="Infrastructure investigations"><FlaskConical size={24} /><div><span className="eyebrow">03 / APPLY THE EVIDENCE</span><h2>Incident workbench</h2><p>RX queues, CPU budgets, epoll, file descriptors and contention. {labs.completed} / {labs.total} investigations reviewed.</p></div><Link className="button button-primary" to="/simulate/infrastructure">Open investigations<ArrowRight size={16} /></Link></section>
       <section className="infra-study-note"><Terminal size={20} /><div><strong>Linux-focused. Production-aware.</strong><p>Command output and incidents are synthetic training examples. Some diagnostics require approval or elevated access. No command runs on your machine from these lessons.</p></div><Link to="/learn/incident">Incident discipline<ArrowRight size={15} /></Link></section>
     </div>
   );

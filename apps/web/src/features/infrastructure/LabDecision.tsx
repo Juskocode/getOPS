@@ -1,11 +1,12 @@
-import { ArrowRight, Check, CircleAlert, LockKeyhole } from "lucide-react";
+import { ArrowRight, Check, CircleAlert, LockKeyhole, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import type { InfrastructureLab } from "../../content/infrastructure/labs";
 import { checkpointResult } from "../../domain/infrastructure";
 
-export function LabDecision({ step, choices, allowed, pending, error, rehearsal, onSubmit, onNext, last }: {
+export function LabDecision({ step, choices, allowed, pending, error, rehearsal, onSubmit, onNext, onRehearse, last }: {
   step: InfrastructureLab["steps"][number]; choices: number[]; allowed: boolean; pending: boolean;
   error: string; rehearsal: boolean; onSubmit: (choice: number) => Promise<boolean>; onNext: () => void; last: boolean;
+  onRehearse?: () => void;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const result = checkpointResult(step, choices);
@@ -30,6 +31,7 @@ export function LabDecision({ step, choices, allowed, pending, error, rehearsal,
       <h3>{step.takeaway}</h3><p>{step.options[step.answer]?.reason}</p>
       <details><summary>Compare all decisions</summary>{step.options.map((option, index) => <div key={index}><strong>{String.fromCharCode(65 + index)}. {option.label}</strong><p>{option.reason}</p></div>)}</details>
       <footer><span>{rehearsal ? "Original evidence remains unchanged" : "Decision saved"}</span><button type="button" className="button button-primary" onClick={onNext}>{last ? "View debrief" : "Next decision"}<ArrowRight size={16} /></button></footer>
+      {!rehearsal && onRehearse && <button type="button" className="decision-rehearse" onClick={onRehearse}><RotateCcw size={15} />Rehearse this decision</button>}
     </div>}
   </section>;
 }
