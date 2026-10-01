@@ -13,7 +13,7 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:8780",
+        target: process.env.GETOPS_API_ORIGIN ?? "http://127.0.0.1:8780",
         changeOrigin: false,
       },
     },
