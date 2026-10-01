@@ -98,6 +98,33 @@ int main() {
   expect_domain_error([&bad_time]() { getops::StateValidator::validate(bad_time); }, "state_invalid");
 
   const auto catalog = getops::Catalog::load(GETOPS_TEST_CATALOG);
+  auto lab_state = nlohmann::json::object();
+  lab_state["infraLabs"]["rx-hotspot"] = {
+      {"inspected", nlohmann::json::array({0, 1})},
+      {"decisions", nlohmann::json::array({{{"choices", nlohmann::json::array({0, 1})}, {"updatedAt", "2026-10-01T12:00:00Z"}}})},
+      {"updatedAt", "2026-10-01T12:00:00Z"}};
+  getops::StateValidator::validate(lab_state);
+  for (const auto& inspected : {nlohmann::json::array({0, 0}), nlohmann::json::array({4}), nlohmann::json::array({"0"})}) {
+    auto bad = lab_state;
+    bad["infraLabs"]["rx-hotspot"]["inspected"] = inspected;
+    expect_domain_error([&bad]() { getops::StateValidator::validate(bad); }, "state_invalid");
+  }
+  for (const auto& choices : {nlohmann::json::array(), nlohmann::json::array({0, 0}), nlohmann::json::array({4}), nlohmann::json::array({0, 1, 2, 3})}) {
+    auto bad = lab_state;
+    bad["infraLabs"]["rx-hotspot"]["decisions"][0]["choices"] = choices;
+    expect_domain_error([&bad]() { getops::StateValidator::validate(bad); }, "state_invalid");
+  }
+  auto bad_lab = lab_state;
+  bad_lab["infraLabs"]["unknown"] = lab_state["infraLabs"]["rx-hotspot"];
+  expect_domain_error([&bad_lab]() { getops::StateValidator::validate(bad_lab); }, "state_invalid");
+  bad_lab = lab_state;
+  bad_lab["infraLabs"]["rx-hotspot"]["updatedAt"] = "yesterday";
+  expect_domain_error([&bad_lab]() { getops::StateValidator::validate(bad_lab); }, "state_invalid");
+  bad_lab = lab_state;
+  bad_lab["infraLabs"]["rx-hotspot"]["decisions"] = nlohmann::json::array({
+      lab_state["infraLabs"]["rx-hotspot"]["decisions"][0], lab_state["infraLabs"]["rx-hotspot"]["decisions"][0],
+      lab_state["infraLabs"]["rx-hotspot"]["decisions"][0], lab_state["infraLabs"]["rx-hotspot"]["decisions"][0]});
+  expect_domain_error([&bad_lab]() { getops::StateValidator::validate(bad_lab); }, "state_invalid");
   const getops::RecallScorer scorer(catalog);
   auto authoritative = nlohmann::json(scorer.validate(
       "f01",

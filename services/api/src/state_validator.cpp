@@ -17,6 +17,7 @@ const std::regex kProfilePattern(R"(^[A-Za-z0-9_-]{1,40}$)");
 const std::regex kCardPattern(R"(^f(?:0[1-9]|[1-9][0-9]|1[0-4][0-9]|150)$)");
 const std::regex kInfraLessonPattern(R"(^(nic|sockets|event-loop|threads|memory|storage|unix|capstone)$)");
 const std::regex kInfraQuestionPattern(R"(^(nic|sockets|event-loop|threads|memory|storage|unix|capstone)-[1-4]$)");
+const std::regex kInfraLabPattern(R"(^(rx-hotspot|cpu-quota|edge-trigger|audit-io)$)");
 const std::regex kTimestampPattern(
     R"(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$)");
 
@@ -246,6 +247,36 @@ void StateValidator::validate(const nlohmann::json& state) {
       }
       if (!std::regex_match(text(answer, "updatedAt", 1, 40), kTimestampPattern)) {
         invalid("Infrastructure updatedAt must be an RFC 3339 timestamp.");
+      }
+    }
+  }
+
+  if (state.contains("infraLabs")) {
+    const auto& labs = state.at("infraLabs");
+    if (!labs.is_object() || labs.size() > 4) invalid("infraLabs must contain at most four investigations.");
+    for (const auto& [id, lab] : labs.items()) {
+      if (!std::regex_match(id, kInfraLabPattern) || !lab.is_object() ||
+          !lab.contains("inspected") || !lab.at("inspected").is_array() || lab.at("inspected").size() > 4 ||
+          !lab.contains("decisions") || !lab.at("decisions").is_array() || lab.at("decisions").size() > 3) {
+        invalid("Invalid infrastructure investigation.");
+      }
+      std::unordered_set<int> inspected;
+      for (const auto& item : lab.at("inspected")) {
+        if (!item.is_number_integer() || item < 0 || item > 3 || !inspected.insert(item.get<int>()).second) {
+          invalid("Investigation evidence IDs must be distinct indices from 0 to 3.");
+        }
+      }
+      if (!std::regex_match(text(lab, "updatedAt", 1, 40), kTimestampPattern)) invalid("Invalid investigation timestamp.");
+      for (const auto& decision : lab.at("decisions")) {
+        if (!decision.is_object() || !decision.contains("choices") || !decision.at("choices").is_array() ||
+            decision.at("choices").empty() || decision.at("choices").size() > 3) invalid("Invalid investigation decision.");
+        std::unordered_set<int> choices;
+        for (const auto& choice : decision.at("choices")) {
+          if (!choice.is_number_integer() || choice < 0 || choice > 3 || !choices.insert(choice.get<int>()).second) {
+            invalid("Investigation choices must be distinct option indices from 0 to 3.");
+          }
+        }
+        if (!std::regex_match(text(decision, "updatedAt", 1, 40), kTimestampPattern)) invalid("Invalid decision timestamp.");
       }
     }
   }
