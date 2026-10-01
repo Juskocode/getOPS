@@ -36,6 +36,7 @@ try {
   await page.getByRole("textbox", { name: "Find infrastructure module" }).fill("no-such-module");
   await page.getByRole("heading", { name: "No matching modules" }).waitFor();
   await page.getByRole("button", { name: "Clear filters" }).click();
+  await page.locator(".infra-module-row").last().waitFor();
   assert.equal(await page.locator(".infra-module-row").count(), 8);
   await page.getByRole("link", { name: "Start with the NIC" }).click();
   await page.getByRole("heading", { name: "From wire to kernel", exact: true }).waitFor();
@@ -80,6 +81,16 @@ try {
   assert.deepEqual(evidence.state.infraRead, ["nic"]);
   assert.deepEqual(evidence.state.infraAnswers["nic-1"].choices, [0, 1]);
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${base}/learn/infrastructure`);
+  await page.getByRole("heading", { name: "Understand the whole path." }).waitFor();
+  assert.equal(await page.getByRole("link", { name: "Continue learning", exact: true }).getAttribute("href"), "/learn/infrastructure/nic?view=checkpoints&q=2");
+  await page.getByRole("combobox", { name: "Filter module progress" }).selectOption("review");
+  await page.waitForURL((url) => url.searchParams.get("status") === "review");
+  await page.waitForFunction(() => document.querySelectorAll(".infra-module-row").length === 1);
+  assert.equal(await page.locator(".infra-module-row").count(), 1);
+  assert.equal(await page.locator(".infra-module-row").getAttribute("href"), "/learn/infrastructure/nic?view=checkpoints&q=0");
+  await page.locator(".infra-module-row").click();
+  await page.getByText("CORRECT / GUIDED / +5 XP").waitFor();
   await page.goto(`${base}/learn/infrastructure`);
   await page.getByRole("heading", { name: "Understand the whole path." }).waitFor();
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "No mobile path overflow");

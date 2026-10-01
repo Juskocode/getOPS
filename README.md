@@ -42,9 +42,15 @@ The server is authoritative for durable written-recall evidence. It re-scores ru
 attempts before accepting a state revision, verifies revision ownership inside a
 PostgreSQL transaction, and records bounded state history. The browser owns
 navigation and drafts, but cannot grant itself durable written-recall score evidence.
-Infrastructure multiple-choice checkpoints are client-scored self-study evidence,
+Infrastructure multiple-choice checkpoints and investigations are client-scored self-study evidence,
 validated for shape by the API. Their XP is a practice incentive, not a proctored
 assessment. See [Systems and infrastructure](docs/infrastructure-path.md).
+
+The Linux track contains eight modules, 32 checkpoints and four evidence-gated
+investigations: receive-path loss, CPU quotas, edge-triggered I/O and audit
+durability. Open `/learn/infrastructure` for the path or
+`/simulate/infrastructure` for the incident workbench. Both use the existing
+C++ API and PostgreSQL profile storage.
 
 ## Run The Stack
 
